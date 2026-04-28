@@ -1,0 +1,377 @@
+backend:
+retailmanagement
+ ┣ audit
+ ┃ ┣ Audit.java
+ ┃ ┣ AuditAction.java
+ ┃ ┣ AuditArgsBuilder.java
+ ┃ ┣ AuditLog.java
+ ┃ ┣ AuditLogAspect.java
+ ┃ ┣ AuditLogFilterRequest.java
+ ┃ ┣ AuditLogRepository.java
+ ┃ ┣ AuditLogService.java
+ ┃ ┣ AuditLogSpecification.java
+ ┃ ┣ AuditModule.java
+ ┃ ┣ AuditReportService.java
+ ┃ ┣ LogSummaryService.java
+ ┃ ┣ TargetType.java
+ ┃ ┗ UserLoginSpecification.java
+ ┣ config
+ ┃ ┣ CloudinaryConfig.java
+ ┃ ┣ CorsConfig.java
+ ┃ ┣ JwtProperties.java
+ ┃ ┣ ModelMapperConfig.java
+ ┃ ┣ SchedulingConfig.java
+ ┃ ┣ SecurityConfig.java
+ ┃ ┗ WebConfig.java
+ ┣ constants
+ ┃ ┣ BirthdayScheduler.java
+ ┃ ┣ GroqClient.java
+ ┃ ┣ OrderStatuses.java
+ ┃ ┗ TierUpgradeNotificationScheduler.java
+ ┣ controller
+ ┃ ┣ AiChatController.java
+ ┃ ┣ AuditLogController.java
+ ┃ ┣ AuthController.java
+ ┃ ┣ BirthdayController.java
+ ┃ ┣ CartController.java
+ ┃ ┣ CategoryController.java
+ ┃ ┣ CusController.java
+ ┃ ┣ CustomerMyDashboardController.java
+ ┃ ┣ LoyaltySummaryController.java
+ ┃ ┣ MigrateController.java
+ ┃ ┣ NotificationController.java
+ ┃ ┣ OrderController.java
+ ┃ ┣ PaymentController.java
+ ┃ ┣ PriceController.java
+ ┃ ┣ ProductController.java
+ ┃ ┣ ProductImportController.java
+ ┃ ┣ ProductSerialController.java
+ ┃ ┣ ProductVariantController.java
+ ┃ ┣ PromotionController.java
+ ┃ ┣ ReportController.java
+ ┃ ┣ ReturnController.java
+ ┃ ┣ SecurityLogController.java
+ ┃ ┣ SettingController.java
+ ┃ ┣ SpinWheelController.java
+ ┃ ┣ TagController.java
+ ┃ ┣ TestApiController.java
+ ┃ ┣ TierProgressController.java
+ ┃ ┣ UserController.java
+ ┃ ┗ UserLoginController.java
+ ┣ dto
+ ┃ ┣ request
+ ┃ ┃ ┣ AddToCartRequest.java
+ ┃ ┃ ┣ AttributeRequest.java
+ ┃ ┃ ┣ CategoryRequest.java
+ ┃ ┃ ┣ ChangePasswordRequest.java
+ ┃ ┃ ┣ ChatMessage.java
+ ┃ ┃ ┣ ChatRequest.java
+ ┃ ┃ ┣ CreateOrderItemRequest.java
+ ┃ ┃ ┣ CreateOrderRequest.java
+ ┃ ┃ ┣ CreateReturnRequest.java
+ ┃ ┃ ┣ CreateUserRequest.java
+ ┃ ┃ ┣ CustomerRequest.java
+ ┃ ┃ ┣ LoginRequest.java
+ ┃ ┃ ┣ PaymentRequest.java
+ ┃ ┃ ┣ ProcessReturnRequest.java
+ ┃ ┃ ┣ ProductRequest.java
+ ┃ ┃ ┣ ProductSerialRequest.java
+ ┃ ┃ ┣ ProductVariantRequest.java
+ ┃ ┃ ┣ PromotionRequest.java
+ ┃ ┃ ┣ RegisterRequest.java
+ ┃ ┃ ┣ SendNotificationRequest.java
+ ┃ ┃ ┣ SetDefaultCurrencyRequest.java
+ ┃ ┃ ┣ UpdateOrderRequest.java
+ ┃ ┃ ┣ UpdateUserPasswordRequest.java
+ ┃ ┃ ┣ UpdateUserRequest.java
+ ┃ ┃ ┣ UpdateUserRoleRequest.java
+ ┃ ┃ ┣ UpsertPriceRequest.java
+ ┃ ┃ ┗ UserLoginFilterRequest.java
+ ┃ ┗ response
+ ┃ ┃ ┣ ApiResponse.java
+ ┃ ┃ ┣ AuditLogResponse.java
+ ┃ ┃ ┣ AuditSummaryResponse.java
+ ┃ ┃ ┣ AuthResponse.java
+ ┃ ┃ ┣ BestSellingProductDTO.java
+ ┃ ┃ ┣ CartItemResponse.java
+ ┃ ┃ ┣ CategoryResponse.java
+ ┃ ┃ ┣ ChatResponse.java
+ ┃ ┃ ┣ CreateOrderResponse.java
+ ┃ ┃ ┣ CustomerBirthdayResponse.java
+ ┃ ┃ ┣ CustomerMyDashboardResponse.java
+ ┃ ┃ ┣ CustomerResponse.java
+ ┃ ┃ ┣ DashboardResponse.java
+ ┃ ┃ ┣ DashboardStatsResponse.java
+ ┃ ┃ ┣ ImageResponse.java
+ ┃ ┃ ┣ LogSummaryResponse.java
+ ┃ ┃ ┣ LoyaltyLedgerResponse.java
+ ┃ ┃ ┣ LoyaltySummaryResponse.java
+ ┃ ┃ ┣ ModuleLogReportResponse.java
+ ┃ ┃ ┣ NotificationResponse.java
+ ┃ ┃ ┣ OrderDetailResponse.java
+ ┃ ┃ ┣ OrderItemDTO.java
+ ┃ ┃ ┣ OrderListResponse.java
+ ┃ ┃ ┣ PaymentResponse.java
+ ┃ ┃ ┣ PriceHistoryResponse.java
+ ┃ ┃ ┣ ProductImportResult.java
+ ┃ ┃ ┣ ProductResponse.java
+ ┃ ┃ ┣ ProductVariantResponse.java
+ ┃ ┃ ┣ PromotionHistoryResponse.java
+ ┃ ┃ ┣ ReturnResponse.java
+ ┃ ┃ ┣ RevenueByCustomerResponse.java
+ ┃ ┃ ┣ SerialResponse.java
+ ┃ ┃ ┣ TierProgressResponse.java
+ ┃ ┃ ┣ UserActionReportResponse.java
+ ┃ ┃ ┣ UserLoginResponse.java
+ ┃ ┃ ┣ UserResponse.java
+ ┃ ┃ ┗ VariantPriceResponse.java
+ ┣ entity
+ ┃ ┣ BaseEntity.java
+ ┃ ┣ CartItem.java
+ ┃ ┣ Category.java
+ ┃ ┣ ChatSession.java
+ ┃ ┣ Customer.java
+ ┃ ┣ CustomerType.java
+ ┃ ┣ Image.java
+ ┃ ┣ LoyaltyLedger.java
+ ┃ ┣ Notification.java
+ ┃ ┣ NotificationType.java
+ ┃ ┣ Order.java
+ ┃ ┣ OrderItem.java
+ ┃ ┣ OrderItemSerial.java
+ ┃ ┣ Payment.java
+ ┃ ┣ Permission.java
+ ┃ ┣ PriceHistory.java
+ ┃ ┣ Product.java
+ ┃ ┣ ProductCategory.java
+ ┃ ┣ ProductCategoryId.java
+ ┃ ┣ ProductHistoryLog.java
+ ┃ ┣ ProductSerial.java
+ ┃ ┣ ProductTag.java
+ ┃ ┣ ProductTagId.java
+ ┃ ┣ ProductVariant.java
+ ┃ ┣ Promotion.java
+ ┃ ┣ PromotionCustomerUsage.java
+ ┃ ┣ PromotionRedemption.java
+ ┃ ┣ Return.java
+ ┃ ┣ Role.java
+ ┃ ┣ RoleEnum.java
+ ┃ ┣ SpinWheelHistory.java
+ ┃ ┣ StockTransaction.java
+ ┃ ┣ SystemSetting.java
+ ┃ ┣ Tag.java
+ ┃ ┣ User.java
+ ┃ ┣ UserLogin.java
+ ┃ ┗ VipTier.java
+ ┣ exception
+ ┃ ┣ ErrorResponse.java
+ ┃ ┗ GlobalExceptionHandler.java
+ ┣ repository
+ ┃ ┣ CartItemRepository.java
+ ┃ ┣ CategoryRepository.java
+ ┃ ┣ ChatSessionRepository.java
+ ┃ ┣ CustomRes.java
+ ┃ ┣ ImageRepository.java
+ ┃ ┣ LoyaltyLedgerRepository.java
+ ┃ ┣ NotificationRepository.java
+ ┃ ┣ OrderItemRepository.java
+ ┃ ┣ OrderItemSerialRepository.java
+ ┃ ┣ OrderRepository.java
+ ┃ ┣ PaymentRepository.java
+ ┃ ┣ PriceHistoryRepository.java
+ ┃ ┣ ProductCategoryRepository.java
+ ┃ ┣ ProductHistoryLogRepository.java
+ ┃ ┣ ProductRepository.java
+ ┃ ┣ ProductSerialRepository.java
+ ┃ ┣ ProductTagRepository.java
+ ┃ ┣ ProductVariantRepository.java
+ ┃ ┣ PromotionCustomerUsageRepository.java
+ ┃ ┣ PromotionHistoryRepository.java
+ ┃ ┣ PromotionRedemptionRepository.java
+ ┃ ┣ PromotionRepository.java
+ ┃ ┣ ReturnRepository.java
+ ┃ ┣ RoleRepository.java
+ ┃ ┣ SpinWheelHistoryRepository.java
+ ┃ ┣ StockTransactionRepository.java
+ ┃ ┣ SystemSettingRepository.java
+ ┃ ┣ TagRepository.java
+ ┃ ┣ UserLoginRepository.java
+ ┃ ┗ UserRepository.java
+ ┣ security
+ ┃ ┣ filter
+ ┃ ┃ ┣ BasicAuthenticationFilter.java
+ ┃ ┃ ┣ JwtAuthenticationFilter.java
+ ┃ ┃ ┗ WebClientConfig.java
+ ┃ ┣ handler
+ ┃ ┃ ┣ CustomAccessDeniedHandler.java
+ ┃ ┃ ┗ CustomAuthenticationEntryPoint.java
+ ┃ ┣ log
+ ┃ ┃ ┣ ActionType.java
+ ┃ ┃ ┣ SecurityAspect.java
+ ┃ ┃ ┣ SecurityLog.java
+ ┃ ┃ ┣ SecurityLogFilterRequest.java
+ ┃ ┃ ┣ SecurityLogRepository.java
+ ┃ ┃ ┣ SecurityLogService.java
+ ┃ ┃ ┣ SecurityLogSpecification.java
+ ┃ ┃ ┣ SensitiveOperation.java
+ ┃ ┃ ┗ SeverityLevel.java
+ ┃ ┣ permission
+ ┃ ┃ ┣ CheckPermission.java
+ ┃ ┃ ┣ PermissionAspect.java
+ ┃ ┃ ┣ PermissionEnum.java
+ ┃ ┃ ┗ PermissionService.java
+ ┃ ┗ service
+ ┃ ┃ ┣ CustomUserDetails.java
+ ┃ ┃ ┣ CustomUserDetailsService.java
+ ┃ ┃ ┗ JwtService.java
+ ┣ service
+ ┃ ┣ AiChatService.java
+ ┃ ┣ AuthService.java
+ ┃ ┣ CartService.java
+ ┃ ┣ CategoryService.java
+ ┃ ┣ CloudinaryService.java
+ ┃ ┣ CustomerEventNotificationService.java
+ ┃ ┣ CustomerMyDashboardService.java
+ ┃ ┣ CustomerService.java
+ ┃ ┣ DashboardService.java
+ ┃ ┣ EmailService.java
+ ┃ ┣ LoyaltyHistoryService.java
+ ┃ ┣ LoyaltyResetService.java
+ ┃ ┣ LoyaltySummaryService.java
+ ┃ ┣ MigrateImageService.java
+ ┃ ┣ NotificationService.java
+ ┃ ┣ OrderEmailService.java
+ ┃ ┣ OrderQueryService.java
+ ┃ ┣ OrderService.java
+ ┃ ┣ OtpService.java
+ ┃ ┣ PaymentService.java
+ ┃ ┣ PdfService.java
+ ┃ ┣ PricingService.java
+ ┃ ┣ ProductImportService.java
+ ┃ ┣ ProductSerialService.java
+ ┃ ┣ ProductService.java
+ ┃ ┣ ProductVariantService.java
+ ┃ ┣ PromotionHistoryService.java
+ ┃ ┣ PromotionService.java
+ ┃ ┣ ReportService.java
+ ┃ ┣ ReturnService.java
+ ┃ ┣ SettingService.java
+ ┃ ┣ SpinWheelService.java
+ ┃ ┣ TagService.java
+ ┃ ┣ TierProgressService.java
+ ┃ ┣ UserLoginLogService.java
+ ┃ ┗ UserService.java
+ ┣ util
+ ┃ ┣ IpUtil.java
+ ┃ ┗ SecurityUtil.java
+ ┗ RetailmanagementApplication.java
+frontend:
+src
+ ┣ api
+ ┃ ┣ audit.api.js
+ ┃ ┣ auth.api.js
+ ┃ ┣ cart.api.js
+ ┃ ┣ categories.api.js
+ ┃ ┣ customers.api.js
+ ┃ ┣ http.js
+ ┃ ┣ notification.api.js
+ ┃ ┣ orders.api.js
+ ┃ ┣ payments.js
+ ┃ ┣ prices.api.js
+ ┃ ┣ products.api.js
+ ┃ ┣ promotions.api.js
+ ┃ ┣ report.api.js
+ ┃ ┣ returns.api.js
+ ┃ ┣ securityLog.api.js
+ ┃ ┣ serials.api.js
+ ┃ ┣ settings.api.js
+ ┃ ┣ spinWheel.api.js
+ ┃ ┣ userLogin.api.js
+ ┃ ┣ users.api.js
+ ┃ ┗ vip-checkin.api.js
+ ┣ assets
+ ┃ ┣ styles
+ ┃ ┃ ┣ order-create.css
+ ┃ ┃ ┣ pricing-manager.css
+ ┃ ┃ ┣ promotion-manager.css
+ ┃ ┃ ┗ system-layout.css
+ ┃ ┗ vue.svg
+ ┣ components
+ ┃ ┣ Aichatwidget.vue
+ ┃ ┣ AuthLayout.vue
+ ┃ ┣ NotificationBell.vue
+ ┃ ┣ Productimportdialog.vue
+ ┃ ┣ QuickNav.vue
+ ┃ ┗ TierProgressBar.vue
+ ┣ pages
+ ┃ ┣ audit
+ ┃ ┃ ┣ AuditDashboard.vue
+ ┃ ┃ ┣ AuditLog.vue
+ ┃ ┃ ┣ AuditReportDashboard.vue
+ ┃ ┃ ┣ SecurityLog.vue
+ ┃ ┃ ┗ UserLoginLog.vue
+ ┃ ┣ customer
+ ┃ ┃ ┣ CartPage.vue
+ ┃ ┃ ┣ Changepassword.vue
+ ┃ ┃ ┣ CustomerDashboard.vue
+ ┃ ┃ ┣ CustomerHome.vue
+ ┃ ┃ ┣ CustomerLogin.vue
+ ┃ ┃ ┣ CustomerOrders.vue
+ ┃ ┃ ┣ CustomerProfile.vue
+ ┃ ┃ ┣ CustomerRegister.vue
+ ┃ ┃ ┣ Forbidden.vue
+ ┃ ┃ ┣ Forgotpassword.vue
+ ┃ ┃ ┣ OrderCreate.vue
+ ┃ ┃ ┣ OrderDetail.vue
+ ┃ ┃ ┣ PaymentSuccess.vue
+ ┃ ┃ ┣ ProductDetail.vue
+ ┃ ┃ ┗ Spinwheel.vue
+ ┃ ┣ inventory
+ ┃ ┃ ┣ InventoryOrderDetail.vue
+ ┃ ┃ ┣ InventoryOrdersPaid.vue
+ ┃ ┃ ┣ InventoryOrdersProcessing.vue
+ ┃ ┃ ┣ InventoryOrdersShipping.vue
+ ┃ ┃ ┗ InventoryShell.vue
+ ┃ ┣ sales
+ ┃ ┃ ┣ SalesCustomerManager.vue
+ ┃ ┃ ┣ SalesPickup.vue
+ ┃ ┃ ┣ SalesPOS.vue
+ ┃ ┃ ┣ SalesReturn.vue
+ ┃ ┃ ┗ SalesShell.vue
+ ┃ ┗ system
+ ┃ ┃ ┣ CategoryManager.vue
+ ┃ ┃ ┣ CustomerManager.vue
+ ┃ ┃ ┣ Customerspendinganalytics.vue
+ ┃ ┃ ┣ Loyaltysummaryadmin.vue
+ ┃ ┃ ┣ OrderDashboard.vue
+ ┃ ┃ ┣ OrderDetail.vue
+ ┃ ┃ ┣ OrderFilter.vue
+ ┃ ┃ ┣ PaymentManagement.vue
+ ┃ ┃ ┣ PricingManager.vue
+ ┃ ┃ ┣ ProductDashboard.vue
+ ┃ ┃ ┣ ProductManager.vue
+ ┃ ┃ ┣ PromotionManager.vue
+ ┃ ┃ ┣ ReportDashboard.vue
+ ┃ ┃ ┣ ReturnManager.vue
+ ┃ ┃ ┣ SerialManager.vue
+ ┃ ┃ ┣ SettingsCurrency.vue
+ ┃ ┃ ┣ SystemDashboard.vue
+ ┃ ┃ ┣ SystemLogin.vue
+ ┃ ┃ ┣ SystemShell.vue
+ ┃ ┃ ┣ Toployalcustomers.vue
+ ┃ ┃ ┣ UserManager.vue
+ ┃ ┃ ┗ _OrderListBase.vue
+ ┣ router
+ ┃ ┗ index.js
+ ┣ stores
+ ┃ ┣ auth.js
+ ┃ ┗ cart.js
+ ┣ ui
+ ┃ ┣ confirm.js
+ ┃ ┗ toast.js
+ ┣ utils
+ ┃ ┗ format.js
+ ┣ App.vue
+ ┣ main.js
+ ┣ src.zip
+ ┗ style.css

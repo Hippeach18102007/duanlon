@@ -1,0 +1,1835 @@
+API Pricing & Promotion - Test Guide
+Base URL: http://localhost:8080
+Tất cả response đều wrap trong ApiResponse<T> trừ ReportController trả thẳng ResponseEntity.
+
+1. Quan ly bang gia san pham
+
+1.1 Tao bang gia
+POST /api/prices/variants/1
+{
+  "currencyCode": "VND",
+  "price": 42900000,
+  "costPrice": 36000000,
+  "reason": "MANUAL"
+}
+variantId = 1 -> Dell XPS 15 9530 (Core i7/16GB/512GB)
+-> {
+    "success": true,
+    "message": "Success",
+    "data": {
+        "costPrice": 36000000.00,
+        "createdAt": "2026-03-07T04:42:40.451224400Z",
+        "createdByUsername": null,
+        "currencyCode": "VND",
+        "effectiveFrom": "2026-03-07T04:42:40.451224400Z",
+        "effectiveTo": null,
+        "id": 9,
+        "price": 42900000.00,
+        "reason": "MANUAL",
+        "variantId": 1
+    }
+}
+
+1.2 Hien thi danh sach gia theo san pham
+GET /api/prices/products/1
+-> {
+    "success": true,
+    "message": "Success",
+    "data": [
+        {
+            "comboInfo": null,
+            "costPrice": 36000000.00,
+            "currencyCode": "VND",
+            "discountAmount": 42900000.00,
+            "finalPrice": 0.00,
+            "price": 42900000.00,
+            "productId": 1,
+            "promotionCode": "APPLE1TRIEU",
+            "promotionName": "Ưu đãi MacBook tháng 3",
+            "sku": "DELL-XPS15-9530-I7-16-512",
+            "variantId": 1,
+            "variantName": "Core i7 / 16GB / 512GB / RTX 4060"
+        },
+        {
+            "comboInfo": null,
+            "costPrice": 50000000.00,
+            "currencyCode": "VND",
+            "discountAmount": 58500000.00,
+            "finalPrice": 0.00,
+            "price": 58500000.00,
+            "productId": 1,
+            "promotionCode": "APPLE1TRIEU",
+            "promotionName": "Ưu đãi MacBook tháng 3",
+            "sku": "DELL-XPS15-9530-I9-32-1T",
+            "variantId": 2,
+            "variantName": "Core i9 / 32GB / 1TB / RTX 4070"
+        }
+    ]
+}
+
+1.2b Hien thi gia theo san pham + khach hang
+GET /api/prices/products/1/customer/1
+customerId = 1 -> Nguyen Minh Tuan (VIP Gold)
+-> {
+    "success": true,
+    "message": "Success",
+    "data": [
+        {
+            "comboInfo": null,
+            "costPrice": 36000000.00,
+            "currencyCode": "VND",
+            "discountAmount": 42900000.00,
+            "finalPrice": 0.00,
+            "price": 42900000.00,
+            "productId": 1,
+            "promotionCode": "APPLE1TRIEU",
+            "promotionName": "Ưu đãi MacBook tháng 3",
+            "sku": "DELL-XPS15-9530-I7-16-512",
+            "variantId": 1,
+            "variantName": "Core i7 / 16GB / 512GB / RTX 4060"
+        },
+        {
+            "comboInfo": null,
+            "costPrice": 50000000.00,
+            "currencyCode": "VND",
+            "discountAmount": 58500000.00,
+            "finalPrice": 0.00,
+            "price": 58500000.00,
+            "productId": 1,
+            "promotionCode": "APPLE1TRIEU",
+            "promotionName": "Ưu đãi MacBook tháng 3",
+            "sku": "DELL-XPS15-9530-I9-32-1T",
+            "variantId": 2,
+            "variantName": "Core i9 / 32GB / 1TB / RTX 4070"
+        }
+    ]
+}
+
+1.3a Chinh sua gia
+PUT /api/prices/history/4
+{
+  "currencyCode": "VND",
+  "price": 19500000,
+  "costPrice": 15000000,
+  "reason": "PRICE_UPDATE"
+}
+historyId = 4 -> Dell Inspiron 15 Core i5/16GB/512GB
+-> {
+    "success": true,
+    "message": "Success",
+    "data": {
+        "costPrice": 15000000.00,
+        "createdAt": "2026-01-15T08:00:00Z",
+        "createdByUsername": "admin",
+        "currencyCode": "VND",
+        "effectiveFrom": "2026-01-15T00:00:00Z",
+        "effectiveTo": null,
+        "id": 4,
+        "price": 19500000.00,
+        "reason": "PRICE_UPDATE",
+        "variantId": 6
+    }
+}
+
+1.3b Xoa gia
+DELETE /api/prices/history/4
+-> {
+    "success": true,
+    "message": "Success",
+    "data": "OK"
+}
+
+1.4 Gia hien tai tren danh sach san pham
+GET /api/products?page=0
+ProductResponse tra minPrice, promotionPrice, promotionName, promotionCode
+-> {
+    "content": [
+        {
+            "attributes": null,
+            "categoryId": 2,
+            "createdAt": "2026-02-01T08:00:00",
+            "currencyCode": "VND",
+            "description": "Laptop mỏng nhẹ OLED, Core Ultra 5 125H",
+            "id": 12,
+            "imageUrl": null,
+            "images": [],
+            "inStock": true,
+            "isFaulty": false,
+            "isNew": true,
+            "isVisible": true,
+            "minPrice": 22900000.00,
+            "name": "Acer Swift Go 14",
+            "promotionCode": "APPLE1TRIEU",
+            "promotionName": "Ưu đãi MacBook tháng 3",
+            "promotionPrice": 0.00,
+            "sku": "ACER-SWG14-2025",
+            "tags": [
+                "new-arrival",
+                "thin-light"
+            ],
+            "totalStock": 9,
+            "variantId": 21
+        },
+        {
+            "attributes": null,
+            "categoryId": 3,
+            "createdAt": "2026-01-15T08:00:00",
+            "currencyCode": "VND",
+            "description": "Laptop gaming RTX 4060, Core i7-13620H, 144Hz",
+            "id": 11,
+            "imageUrl": null,
+            "images": [],
+            "inStock": true,
+            "isFaulty": false,
+            "isNew": true,
+            "isVisible": true,
+            "minPrice": 29900000.00,
+            "name": "MSI Katana 15 B13V",
+            "promotionCode": "APPLE1TRIEU",
+            "promotionName": "Ưu đãi MacBook tháng 3",
+            "promotionPrice": 0.00,
+            "sku": "MSI-KAT15-B13V",
+            "tags": [
+                "new-arrival",
+                "gaming"
+            ],
+            "totalStock": 10,
+            "variantId": 20
+        },
+        {
+            "attributes": null,
+            "categoryId": 5,
+            "createdAt": "2025-12-01T08:00:00",
+            "currencyCode": "VND",
+            "description": "MacBook Pro chip M3 Pro, màn hình Liquid Retina XDR",
+            "id": 10,
+            "imageUrl": null,
+            "images": [],
+            "inStock": true,
+            "isFaulty": false,
+            "isNew": false,
+            "isVisible": true,
+            "minPrice": 54990000.00,
+            "name": "Apple MacBook Pro M3 Pro 14\"",
+            "promotionCode": "APPLE1TRIEU",
+            "promotionName": "Ưu đãi MacBook tháng 3",
+            "promotionPrice": 0.00,
+            "sku": "APPLE-MBP-M3P-14",
+            "tags": [
+                "apple",
+                "workstation"
+            ],
+            "totalStock": 7,
+            "variantId": 18
+        },
+        {
+            "attributes": null,
+            "categoryId": 5,
+            "createdAt": "2026-01-01T08:00:00",
+            "currencyCode": "VND",
+            "description": "MacBook Air chip M3, màn hình Liquid Retina 13.6\"",
+            "id": 9,
+            "imageUrl": null,
+            "images": [],
+            "inStock": true,
+            "isFaulty": false,
+            "isNew": true,
+            "isVisible": true,
+            "minPrice": 28990000.00,
+            "name": "Apple MacBook Air M3 13\"",
+            "promotionCode": "APPLE1TRIEU",
+            "promotionName": "Ưu đãi MacBook tháng 3",
+            "promotionPrice": 0.00,
+            "sku": "APPLE-MBA-M3-13",
+            "tags": [
+                "new-arrival",
+                "apple",
+                "thin-light"
+            ],
+            "totalStock": 20,
+            "variantId": 16
+        },
+        {
+            "attributes": null,
+            "categoryId": 3,
+            "createdAt": "2026-01-10T08:00:00",
+            "currencyCode": "VND",
+            "description": "Laptop gaming phổ thông RTX 3050, Ryzen 5 7535H",
+            "id": 8,
+            "imageUrl": null,
+            "images": [],
+            "inStock": true,
+            "isFaulty": false,
+            "isNew": true,
+            "isVisible": true,
+            "minPrice": 18500000.00,
+            "name": "Lenovo IdeaPad Gaming 3",
+            "promotionCode": "APPLE1TRIEU",
+            "promotionName": "Ưu đãi MacBook tháng 3",
+            "promotionPrice": 0.00,
+            "sku": "LEN-IDG3-2025",
+            "tags": [
+                "new-arrival",
+                "gaming"
+            ],
+            "totalStock": 22,
+            "variantId": 14
+        },
+        {
+            "attributes": null,
+            "categoryId": 2,
+            "createdAt": "2025-12-01T08:00:00",
+            "currencyCode": "VND",
+            "description": "Laptop doanh nhân bền bỉ, Core i5-1335U, bảo mật cao",
+            "id": 7,
+            "imageUrl": null,
+            "images": [],
+            "inStock": true,
+            "isFaulty": false,
+            "isNew": false,
+            "isVisible": true,
+            "minPrice": 18900000.00,
+            "name": "Lenovo ThinkPad E14 Gen5",
+            "promotionCode": "APPLE1TRIEU",
+            "promotionName": "Ưu đãi MacBook tháng 3",
+            "promotionPrice": 0.00,
+            "sku": "LEN-TPE14-G5",
+            "tags": [
+                "office"
+            ],
+            "totalStock": 17,
+            "variantId": 12
+        },
+        {
+            "attributes": null,
+            "categoryId": 2,
+            "createdAt": "2025-12-01T08:00:00",
+            "currencyCode": "VND",
+            "description": "Laptop văn phòng mỏng nhẹ Core i5-1235U",
+            "id": 6,
+            "imageUrl": null,
+            "images": [],
+            "inStock": true,
+            "isFaulty": false,
+            "isNew": false,
+            "isVisible": true,
+            "minPrice": 13900000.00,
+            "name": "Asus VivoBook 15",
+            "promotionCode": "APPLE1TRIEU",
+            "promotionName": "Ưu đãi MacBook tháng 3",
+            "promotionPrice": 0.00,
+            "sku": "ASUS-VB15-X1504",
+            "tags": [
+                "bestseller",
+                "office",
+                "thin-light"
+            ],
+            "totalStock": 45,
+            "variantId": 10
+        },
+        {
+            "attributes": null,
+            "categoryId": 3,
+            "createdAt": "2026-01-05T08:00:00",
+            "currencyCode": "VND",
+            "description": "Laptop gaming cao cấp RTX 4070, Core i9-13980HX",
+            "id": 5,
+            "imageUrl": null,
+            "images": [],
+            "inStock": true,
+            "isFaulty": false,
+            "isNew": true,
+            "isVisible": true,
+            "minPrice": 55900000.00,
+            "name": "Asus ROG Strix G16",
+            "promotionCode": "APPLE1TRIEU",
+            "promotionName": "Ưu đãi MacBook tháng 3",
+            "promotionPrice": 0.00,
+            "sku": "ASUS-ROG-G16-2025",
+            "tags": [
+                "new-arrival",
+                "gaming"
+            ],
+            "totalStock": 8,
+            "variantId": 8
+        },
+        {
+            "attributes": null,
+            "categoryId": 3,
+            "createdAt": "2025-12-01T08:00:00",
+            "currencyCode": "VND",
+            "description": "Laptop gaming tầm trung RTX 3050, Core i5-12450H",
+            "id": 4,
+            "imageUrl": null,
+            "images": [],
+            "inStock": true,
+            "isFaulty": false,
+            "isNew": false,
+            "isVisible": true,
+            "minPrice": 21500000.00,
+            "name": "HP Victus 15 Gaming",
+            "promotionCode": "APPLE1TRIEU",
+            "promotionName": "Ưu đãi MacBook tháng 3",
+            "promotionPrice": 0.00,
+            "sku": "HP-VIC15-2023",
+            "tags": [
+                "gaming",
+                "sale"
+            ],
+            "totalStock": 28,
+            "variantId": 6
+        },
+        {
+            "attributes": null,
+            "categoryId": 2,
+            "createdAt": "2025-12-01T08:00:00",
+            "currencyCode": "VND",
+            "description": "Laptop 2-in-1 cao cấp OLED, Core i7-1355U",
+            "id": 3,
+            "imageUrl": null,
+            "images": [],
+            "inStock": true,
+            "isFaulty": false,
+            "isNew": false,
+            "isVisible": true,
+            "minPrice": 38900000.00,
+            "name": "HP Spectre x360 14",
+            "promotionCode": "APPLE1TRIEU",
+            "promotionName": "Ưu đãi MacBook tháng 3",
+            "promotionPrice": 0.00,
+            "sku": "HP-SPECT-X360-14",
+            "tags": [
+                "thin-light"
+            ],
+            "totalStock": 5,
+            "variantId": 5
+        },
+        {
+            "attributes": null,
+            "categoryId": 2,
+            "createdAt": "2025-12-01T08:00:00",
+            "currencyCode": "VND",
+            "description": "Laptop văn phòng phổ thông Core i5-1235U",
+            "id": 2,
+            "imageUrl": null,
+            "images": [],
+            "inStock": true,
+            "isFaulty": false,
+            "isNew": false,
+            "isVisible": true,
+            "minPrice": 14500000.00,
+            "name": "Dell Inspiron 15 3520",
+            "promotionCode": "APPLE1TRIEU",
+            "promotionName": "Ưu đãi MacBook tháng 3",
+            "promotionPrice": 0.00,
+            "sku": "DELL-INS15-3520",
+            "tags": [
+                "bestseller",
+                "office"
+            ],
+            "totalStock": 27,
+            "variantId": 3
+        },
+        {
+            "attributes": null,
+            "categoryId": 4,
+            "createdAt": "2025-12-01T08:00:00",
+            "currencyCode": "VND",
+            "description": "Laptop cao cấp màn hình OLED 15.6\", Core i7-13700H",
+            "id": 1,
+            "imageUrl": null,
+            "images": [],
+            "inStock": true,
+            "isFaulty": false,
+            "isNew": false,
+            "isVisible": true,
+            "minPrice": 42900000.00,
+            "name": "Dell XPS 15 9530",
+            "promotionCode": "APPLE1TRIEU",
+            "promotionName": "Ưu đãi MacBook tháng 3",
+            "promotionPrice": 0.00,
+            "sku": "DELL-XPS15-9530",
+            "tags": [
+                "bestseller",
+                "workstation"
+            ],
+            "totalStock": 11,
+            "variantId": 1
+        }
+    ],
+    "empty": false,
+    "first": true,
+    "last": true,
+    "number": 0,
+    "numberOfElements": 12,
+    "pageable": {
+        "offset": 0,
+        "pageNumber": 0,
+        "pageSize": 20,
+        "paged": true,
+        "sort": {
+            "empty": false,
+            "sorted": true,
+            "unsorted": false
+        },
+        "unpaged": false
+    },
+    "size": 20,
+    "sort": {
+        "empty": false,
+        "sorted": true,
+        "unsorted": false
+    },
+    "totalElements": 12,
+    "totalPages": 1
+}
+
+1.5 Thiet lap tien te mac dinh
+PUT /api/settings/currency/default
+{
+ "currencyCode": "VND"
+}
+-> {
+    "success": true,
+    "message": "Success",
+    "data": "OK"
+}
+
+GET /api/settings/currency/default
+-> {
+    "success": true,
+    "message": "Success",
+    "data": "VND"
+}
+
+GET /api/settings
+-> {
+    "success": true,
+    "message": "Success",
+    "data": {
+        "vip_gold_threshold": "30000000",
+        "DEFAULT_CURRENCY": "VND",
+        "spin_enabled": "true",
+        "shipping_fee_online": "30000",
+        "vip_silver_threshold": "10000000",
+        "currency_default": "VND",
+        "spin_expire_days": "7",
+        "spin_max_bonus": "7",
+        "vip_gold_discount": "3",
+        "loyalty_earn_rate": "1",
+        "vip_silver_discount": "3"
+    }
+}
+
+1.6 Lich su gia san pham
+GET /api/prices/variants/1/history
+-> {
+    "success": true,
+    "message": "Success",
+    "data": [
+        {
+            "costPrice": 36000000.00,
+            "createdAt": "2026-03-07T04:42:40.451224400Z",
+            "createdByUsername": null,
+            "currencyCode": "VND",
+            "effectiveFrom": "2026-03-07T04:42:40.451224400Z",
+            "effectiveTo": null,
+            "id": 9,
+            "price": 42900000.00,
+            "reason": "MANUAL",
+            "variantId": 1
+        },
+        {
+            "costPrice": 36000000.00,
+            "createdAt": "2026-03-07T04:41:18.429514600Z",
+            "createdByUsername": null,
+            "currencyCode": "VND",
+            "effectiveFrom": "2026-03-07T04:41:18.429514600Z",
+            "effectiveTo": "2026-03-07T04:42:40.451224400Z",
+            "id": 8,
+            "price": 42900000.00,
+            "reason": "MANUAL",
+            "variantId": 1
+        },
+        {
+            "costPrice": 36000000.00,
+            "createdAt": "2026-03-07T03:48:21.490122500Z",
+            "createdByUsername": null,
+            "currencyCode": "VND",
+            "effectiveFrom": "2026-03-07T03:48:21.490122500Z",
+            "effectiveTo": "2026-03-07T04:41:18.429514600Z",
+            "id": 7,
+            "price": 42900000.00,
+            "reason": "MANUAL",
+            "variantId": 1
+        }
+    ]
+}
+
+1.7 Bang gia tu dong theo ngay
+POST /api/promotions
+{
+  "code": "SALE_Q2_2026",
+  "name": "Gia tu dong Q2/2026",
+  "discountType": "PERCENT",
+  "discountValue": 8,
+  "startDate": "2027-04-01T00:00:00",
+  "endDate": "2027-06-30T23:59:59",
+  "scope": "ALL",
+  "priority": 1,
+  "isActive": true
+}
+-> {
+    "success": true,
+    "message": "Success",
+    "data": {
+        "id": 6,
+        "code": "SALE_Q2_2026",
+        "name": "Gia tu dong Q2/2026",
+        "description": null,
+        "discountType": "PERCENT",
+        "discountValue": 8.00,
+        "minOrderAmount": null,
+        "applicabilityJson": "{\"scope\":\"ALL\",\"product_ids\":null,\"variant_ids\":null,\"customer_types\":null,\"vip_tiers\":null}",
+        "rulesJson": null,
+        "priority": 1,
+        "stackable": false,
+        "startDate": "2027-04-01T00:00:00",
+        "endDate": "2027-06-30T23:59:59",
+        "isActive": true,
+        "createdBy": 1,
+        "createdAt": "2026-03-07T11:50:20.1519561"
+    }
+}
+
+1.8 Canh bao gia thap hon gia nhap
+GET /api/prices/variants/1/cost-warning
+-> {
+    "success": true,
+    "message": "Success",
+    "data": {
+        "price": 42900000.00,
+        "costPrice": 36000000.00,
+        "variantId": 1,
+        "belowCost": false
+    }
+}
+
+1.9 Canh bao gia xung dot
+GET /api/prices/conflicts
+-> {
+    "success": true,
+    "message": "Success",
+    "data": []
+}
+
+2. Quan ly khuyen mai
+
+2.1 Tao khuyen mai
+POST /api/promotions
+{
+  "code": "GAMING_Q2_2026",
+  "name": "Sale Laptop Gaming Q2/2026",
+  "discountType": "PERCENT",
+  "discountValue": 10,
+  "startDate": "2026-04-01T00:00:00",
+  "endDate": "2026-06-30T23:59:59",
+  "scope": "PRODUCT",
+  "productIds": [4,5,8,11],
+  "priority": 1,
+  "stackable": false,
+  "isActive": true
+}
+-> {
+    "success": true,
+    "message": "Success",
+    "data": {
+        "id": 7,
+        "code": "GAMING_Q2_2026",
+        "name": "Sale Laptop Gaming Q2/2026",
+        "description": null,
+        "discountType": "PERCENT",
+        "discountValue": 10.00,
+        "minOrderAmount": null,
+        "applicabilityJson": "{\"scope\":\"PRODUCT\",\"product_ids\":[4,5,8,11],\"variant_ids\":null,\"customer_types\":null,\"vip_tiers\":null}",
+        "rulesJson": null,
+        "priority": 1,
+        "stackable": false,
+        "startDate": "2027-07-01T00:00:00",
+        "endDate": "2027-08-30T23:59:59",
+        "isActive": true,
+        "createdBy": 1,
+        "createdAt": "2026-03-07T11:52:26.9853123"
+    }
+}
+
+2.1b Tao khuyen mai combo
+POST /api/promotions
+{
+  "code": "BUY2GET1_VIVOBOOK",
+  "name": "Mua 2 VivoBook tang 1",
+  "startDate": "2026-04-01T00:00:00",
+  "endDate": "2026-04-30T23:59:59",
+  "scope": "PRODUCT",
+  "productIds": [6],
+  "buyQty": 2,
+  "getQty": 1,
+  "priority": 3,
+  "isActive": true
+}
+-> {
+    "success": true,
+    "message": "Success",
+    "data": {
+        "id": 8,
+        "code": "BUY2GET1_VIVOBOOK",
+        "name": "Mua 2 VivoBook tang 1",
+        "description": null,
+        "discountType": "PERCENT",
+        "discountValue": 0.00,
+        "minOrderAmount": null,
+        "applicabilityJson": "{\"scope\":\"PRODUCT\",\"product_ids\":[6],\"variant_ids\":null,\"customer_types\":null,\"vip_tiers\":null}",
+        "rulesJson": "{\"usage_limit\":null,\"combo\":{\"buy_qty\":2,\"get_qty\":1}}",
+        "priority": 3,
+        "stackable": false,
+        "startDate": "2027-07-01T00:00:00",
+        "endDate": "2027-07-30T23:59:59",
+        "isActive": true,
+        "createdBy": 1,
+        "createdAt": "2026-03-07T11:53:56.0619121"
+    }
+}
+
+2.1c Khuyen mai gioi han so lan dung
+POST /api/promotions
+{
+  "code": "LIMITED50_MBA",
+  "name": "Chi 50 luot MacBook Air M3",
+  "discountType": "PERCENT",
+  "discountValue": 5,
+  "startDate": "2026-04-01T00:00:00",
+  "endDate": "2026-04-30T23:59:59",
+  "scope": "PRODUCT",
+  "productIds": [9],
+  "usageLimit": 50,
+  "priority": 2,
+  "isActive": true
+}
+-> {
+    "success": true,
+    "message": "Success",
+    "data": {
+        "id": 9,
+        "code": "LIMITED50_MBA",
+        "name": "Chi 50 luot MacBook Air M3",
+        "description": null,
+        "discountType": "PERCENT",
+        "discountValue": 5.00,
+        "minOrderAmount": null,
+        "applicabilityJson": "{\"scope\":\"PRODUCT\",\"product_ids\":[9],\"variant_ids\":null,\"customer_types\":null,\"vip_tiers\":null}",
+        "rulesJson": "{\"usage_limit\":50,\"combo\":null}",
+        "priority": 2,
+        "stackable": false,
+        "startDate": "2027-08-01T00:00:00",
+        "endDate": "2027-08-30T23:59:59",
+        "isActive": true,
+        "createdBy": 1,
+        "createdAt": "2026-03-07T11:55:47.9430196"
+    }
+}
+
+2.1d Khuyen mai theo VIP
+POST /api/promotions
+{
+  "code": "VIP_GOLD_Q2",
+  "name": "Uu dai VIP Gold Q2/2026",
+  "discountType": "PERCENT",
+  "discountValue": 5,
+  "startDate": "2026-04-01T00:00:00",
+  "endDate": "2026-06-30T23:59:59",
+  "scope": "ALL",
+  "customerTypes": ["VIP"],
+  "vipTiers": ["GOLD"],
+  "priority": 5,
+  "isActive": true
+}
+-> {
+    "success": true,
+    "message": "Success",
+    "data": {
+        "id": 10,
+        "code": "VIP_GOLD_Q2",
+        "name": "Uu dai VIP Gold Q2/2026",
+        "description": null,
+        "discountType": "PERCENT",
+        "discountValue": 5.00,
+        "minOrderAmount": null,
+        "applicabilityJson": "{\"scope\":\"ALL\",\"product_ids\":null,\"variant_ids\":null,\"customer_types\":[\"VIP\"],\"vip_tiers\":[\"GOLD\"]}",
+        "rulesJson": null,
+        "priority": 5,
+        "stackable": false,
+        "startDate": "2027-09-01T00:00:00",
+        "endDate": "2027-09-30T23:59:59",
+        "isActive": true,
+        "createdBy": 1,
+        "createdAt": "2026-03-07T11:56:22.4516198"
+    }
+}
+
+2.2 Danh sach khuyen mai
+GET /api/promotions
+-> {
+    "success": true,
+    "message": "Success",
+    "data": [
+        {
+            "id": 1,
+            "code": "TETMUNG2026",
+            "name": "Khuyến mãi Tết 2026",
+            "description": "Giảm 5% cho tất cả đơn hàng dịp Tết",
+            "discountType": "PERCENT",
+            "discountValue": 5.00,
+            "minOrderAmount": 10000000.00,
+            "applicabilityJson": null,
+            "rulesJson": null,
+            "priority": 10,
+            "stackable": false,
+            "startDate": "2026-01-25T00:00:00",
+            "endDate": "2026-02-10T23:59:59",
+            "isActive": true,
+            "createdBy": 1,
+            "createdAt": "2026-01-20T08:00:00"
+        },
+        {
+            "id": 2,
+            "code": "NEWCUST500K",
+            "name": "Ưu đãi khách hàng mới",
+            "description": "Giảm 500K cho đơn đầu tiên",
+            "discountType": "FIXED",
+            "discountValue": 500000.00,
+            "minOrderAmount": 15000000.00,
+            "applicabilityJson": null,
+            "rulesJson": null,
+            "priority": 5,
+            "stackable": false,
+            "startDate": "2026-01-01T00:00:00",
+            "endDate": "2026-03-31T23:59:59",
+            "isActive": true,
+            "createdBy": 1,
+            "createdAt": "2025-12-28T08:00:00"
+        },
+        {
+            "id": 3,
+            "code": "GAMING10",
+            "name": "Sale Laptop Gaming",
+            "description": "Giảm 10% cho laptop gaming",
+            "discountType": "PERCENT",
+            "discountValue": 10.00,
+            "minOrderAmount": 18000000.00,
+            "applicabilityJson": null,
+            "rulesJson": null,
+            "priority": 8,
+            "stackable": false,
+            "startDate": "2026-01-15T00:00:00",
+            "endDate": "2026-02-28T23:59:59",
+            "isActive": true,
+            "createdBy": 1,
+            "createdAt": "2026-01-10T08:00:00"
+        },
+        {
+            "id": 4,
+            "code": "APPLE1TRIEU",
+            "name": "Ưu đãi MacBook tháng 3",
+            "description": "Giảm 1 triệu cho MacBook",
+            "discountType": "FIXED",
+            "discountValue": 1000000.00,
+            "minOrderAmount": 25000000.00,
+            "applicabilityJson": null,
+            "rulesJson": null,
+            "priority": 7,
+            "stackable": false,
+            "startDate": "2026-03-01T00:00:00",
+            "endDate": "2026-03-31T23:59:59",
+            "isActive": true,
+            "createdBy": 1,
+            "createdAt": "2026-02-25T08:00:00"
+        },
+        {
+            "id": 5,
+            "code": "VIP2026",
+            "name": "Ưu đãi khách VIP",
+            "description": "Giảm thêm 3% cho khách VIP Gold",
+            "discountType": "PERCENT",
+            "discountValue": 3.00,
+            "minOrderAmount": 20000000.00,
+            "applicabilityJson": null,
+            "rulesJson": null,
+            "priority": 9,
+            "stackable": true,
+            "startDate": "2026-01-01T00:00:00",
+            "endDate": "2026-12-31T23:59:59",
+            "isActive": true,
+            "createdBy": 1,
+            "createdAt": "2025-12-28T08:00:00"
+        },
+        {
+            "id": 6,
+            "code": "SALE_Q2_2026",
+            "name": "Gia tu dong Q2/2026",
+            "description": null,
+            "discountType": "PERCENT",
+            "discountValue": 8.00,
+            "minOrderAmount": null,
+            "applicabilityJson": "{\"scope\":\"ALL\",\"product_ids\":null,\"variant_ids\":null,\"customer_types\":null,\"vip_tiers\":null}",
+            "rulesJson": null,
+            "priority": 1,
+            "stackable": false,
+            "startDate": "2027-04-01T00:00:00",
+            "endDate": "2027-06-30T23:59:59",
+            "isActive": true,
+            "createdBy": 1,
+            "createdAt": "2026-03-07T11:50:20.1519561"
+        },
+        {
+            "id": 7,
+            "code": "GAMING_Q2_2026",
+            "name": "Sale Laptop Gaming Q2/2026",
+            "description": null,
+            "discountType": "PERCENT",
+            "discountValue": 10.00,
+            "minOrderAmount": null,
+            "applicabilityJson": "{\"scope\":\"PRODUCT\",\"product_ids\":[4,5,8,11],\"variant_ids\":null,\"customer_types\":null,\"vip_tiers\":null}",
+            "rulesJson": null,
+            "priority": 1,
+            "stackable": false,
+            "startDate": "2027-07-01T00:00:00",
+            "endDate": "2027-08-30T23:59:59",
+            "isActive": true,
+            "createdBy": 1,
+            "createdAt": "2026-03-07T11:52:26.9853123"
+        },
+        {
+            "id": 8,
+            "code": "BUY2GET1_VIVOBOOK",
+            "name": "Mua 2 VivoBook tang 1",
+            "description": null,
+            "discountType": "PERCENT",
+            "discountValue": 0.00,
+            "minOrderAmount": null,
+            "applicabilityJson": "{\"scope\":\"PRODUCT\",\"product_ids\":[6],\"variant_ids\":null,\"customer_types\":null,\"vip_tiers\":null}",
+            "rulesJson": "{\"usage_limit\":null,\"combo\":{\"buy_qty\":2,\"get_qty\":1}}",
+            "priority": 3,
+            "stackable": false,
+            "startDate": "2027-07-01T00:00:00",
+            "endDate": "2027-07-30T23:59:59",
+            "isActive": true,
+            "createdBy": 1,
+            "createdAt": "2026-03-07T11:53:56.0619121"
+        },
+        {
+            "id": 9,
+            "code": "LIMITED50_MBA",
+            "name": "Chi 50 luot MacBook Air M3",
+            "description": null,
+            "discountType": "PERCENT",
+            "discountValue": 5.00,
+            "minOrderAmount": null,
+            "applicabilityJson": "{\"scope\":\"PRODUCT\",\"product_ids\":[9],\"variant_ids\":null,\"customer_types\":null,\"vip_tiers\":null}",
+            "rulesJson": "{\"usage_limit\":50,\"combo\":null}",
+            "priority": 2,
+            "stackable": false,
+            "startDate": "2027-08-01T00:00:00",
+            "endDate": "2027-08-30T23:59:59",
+            "isActive": true,
+            "createdBy": 1,
+            "createdAt": "2026-03-07T11:55:47.9430196"
+        },
+        {
+            "id": 10,
+            "code": "VIP_GOLD_Q2",
+            "name": "Uu dai VIP Gold Q2/2026",
+            "description": null,
+            "discountType": "PERCENT",
+            "discountValue": 5.00,
+            "minOrderAmount": null,
+            "applicabilityJson": "{\"scope\":\"ALL\",\"product_ids\":null,\"variant_ids\":null,\"customer_types\":[\"VIP\"],\"vip_tiers\":[\"GOLD\"]}",
+            "rulesJson": null,
+            "priority": 5,
+            "stackable": false,
+            "startDate": "2027-09-01T00:00:00",
+            "endDate": "2027-09-30T23:59:59",
+            "isActive": true,
+            "createdBy": 1,
+            "createdAt": "2026-03-07T11:56:22.4516198"
+        }
+    ]
+}
+
+GET /api/promotions?activeOnly=true
+-> {
+    "success": true,
+    "message": "Success",
+    "data": [
+        {
+            "id": 2,
+            "code": "NEWCUST500K",
+            "name": "Ưu đãi khách hàng mới",
+            "description": "Giảm 500K cho đơn đầu tiên",
+            "discountType": "FIXED",
+            "discountValue": 500000.00,
+            "minOrderAmount": 15000000.00,
+            "applicabilityJson": null,
+            "rulesJson": null,
+            "priority": 5,
+            "stackable": false,
+            "startDate": "2026-01-01T00:00:00",
+            "endDate": "2026-03-31T23:59:59",
+            "isActive": true,
+            "createdBy": 1,
+            "createdAt": "2025-12-28T08:00:00"
+        },
+        {
+            "id": 4,
+            "code": "APPLE1TRIEU",
+            "name": "Ưu đãi MacBook tháng 3",
+            "description": "Giảm 1 triệu cho MacBook",
+            "discountType": "FIXED",
+            "discountValue": 1000000.00,
+            "minOrderAmount": 25000000.00,
+            "applicabilityJson": null,
+            "rulesJson": null,
+            "priority": 7,
+            "stackable": false,
+            "startDate": "2026-03-01T00:00:00",
+            "endDate": "2026-03-31T23:59:59",
+            "isActive": true,
+            "createdBy": 1,
+            "createdAt": "2026-02-25T08:00:00"
+        },
+        {
+            "id": 5,
+            "code": "VIP2026",
+            "name": "Ưu đãi khách VIP",
+            "description": "Giảm thêm 3% cho khách VIP Gold",
+            "discountType": "PERCENT",
+            "discountValue": 3.00,
+            "minOrderAmount": 20000000.00,
+            "applicabilityJson": null,
+            "rulesJson": null,
+            "priority": 9,
+            "stackable": true,
+            "startDate": "2026-01-01T00:00:00",
+            "endDate": "2026-12-31T23:59:59",
+            "isActive": true,
+            "createdBy": 1,
+            "createdAt": "2025-12-28T08:00:00"
+        }
+    ]
+}
+
+2.3 Sua khuyen mai
+PUT /api/promotions/3
+{
+  "name": "Sale Laptop Gaming — Đã cập nhật",
+  "discountValue": 12,
+  "endDate": "2026-03-31T23:59:59",
+  "isActive": true
+}
+
+2.3b Xoa khuyen mai
+DELETE /api/promotions/3
+-> {
+    "success": true,
+    "message": "Success",
+    "data": "Promotion deactivated successfully"
+}
+
+2.4 Chi tiet khuyen mai
+GET /api/promotions/1
+-> {
+    "success": true,
+    "message": "Success",
+    "data": {
+        "id": 1,
+        "code": "TETMUNG2026",
+        "name": "Khuyến mãi Tết 2026",
+        "description": "Giảm 5% cho tất cả đơn hàng dịp Tết",
+        "discountType": "PERCENT",
+        "discountValue": 5.00,
+        "minOrderAmount": 10000000.00,
+        "applicabilityJson": null,
+        "rulesJson": null,
+        "priority": 10,
+        "stackable": false,
+        "startDate": "2026-01-25T00:00:00",
+        "endDate": "2026-02-10T23:59:59",
+        "isActive": true,
+        "createdBy": 1,
+        "createdAt": "2026-01-20T08:00:00"
+    }
+}
+
+2.5 Kiem tra trung lap
+GET /api/promotions/conflicts
+-> {
+    "success": true,
+    "message": "Success",
+    "data": [
+        {
+            "stackable": false,
+            "promotion1": "NEWCUST500K",
+            "promotion2": "APPLE1TRIEU"
+        },
+        {
+            "stackable": false,
+            "promotion1": "NEWCUST500K",
+            "promotion2": "VIP2026"
+        },
+        {
+            "stackable": false,
+            "promotion1": "APPLE1TRIEU",
+            "promotion2": "VIP2026"
+        }
+    ]
+}
+
+2.6 Khuyen mai sap het han
+GET /api/promotions/expiring?withinDays=3
+-> {
+    "success": true,
+    "message": "Success",
+    "data": []
+}
+
+2.7 Khuyen mai dang hoat dong
+GET /api/promotions?activeOnly=true
+-> {
+    "success": true,
+    "message": "Success",
+    "data": [
+        {
+            "id": 2,
+            "code": "NEWCUST500K",
+            "name": "Ưu đãi khách hàng mới",
+            "description": "Giảm 500K cho đơn đầu tiên",
+            "discountType": "FIXED",
+            "discountValue": 500000.00,
+            "minOrderAmount": 15000000.00,
+            "applicabilityJson": null,
+            "rulesJson": null,
+            "priority": 5,
+            "stackable": false,
+            "startDate": "2026-01-01T00:00:00",
+            "endDate": "2026-03-31T23:59:59",
+            "isActive": true,
+            "createdBy": 1,
+            "createdAt": "2025-12-28T08:00:00"
+        },
+        {
+            "id": 4,
+            "code": "APPLE1TRIEU",
+            "name": "Ưu đãi MacBook tháng 3",
+            "description": "Giảm 1 triệu cho MacBook",
+            "discountType": "FIXED",
+            "discountValue": 1000000.00,
+            "minOrderAmount": 25000000.00,
+            "applicabilityJson": null,
+            "rulesJson": null,
+            "priority": 7,
+            "stackable": false,
+            "startDate": "2026-03-01T00:00:00",
+            "endDate": "2026-03-31T23:59:59",
+            "isActive": true,
+            "createdBy": 1,
+            "createdAt": "2026-02-25T08:00:00"
+        },
+        {
+            "id": 5,
+            "code": "VIP2026",
+            "name": "Ưu đãi khách VIP",
+            "description": "Giảm thêm 3% cho khách VIP Gold",
+            "discountType": "PERCENT",
+            "discountValue": 3.00,
+            "minOrderAmount": 20000000.00,
+            "applicabilityJson": null,
+            "rulesJson": null,
+            "priority": 9,
+            "stackable": true,
+            "startDate": "2026-01-01T00:00:00",
+            "endDate": "2026-12-31T23:59:59",
+            "isActive": true,
+            "createdBy": 1,
+            "createdAt": "2025-12-28T08:00:00"
+        }
+    ]
+}
+
+3. Ap dung khuyen mai va tinh gia
+
+3.1 Gia sau khuyen mai cho variant
+GET /api/prices/variants/6/effective
+-> {
+    "success": true,
+    "message": "Success",
+    "data": {
+        "comboInfo": null,
+        "costPrice": 16500000.00,
+        "currencyCode": "VND",
+        "discountAmount": 21500000.00,
+        "finalPrice": 0.00,
+        "price": 21500000.00,
+        "productId": 4,
+        "promotionCode": "APPLE1TRIEU",
+        "promotionName": "Ưu đãi MacBook tháng 3",
+        "sku": "HP-VIC15-I5-8-512-3050",
+        "variantId": 6,
+        "variantName": "Core i5 / 8GB / 512GB / RTX 3050"
+    }
+}
+
+3.2 Gia combo
+GET /api/prices/variants/10/effective
+-> {
+    "success": true,
+    "message": "Success",
+    "data": {
+        "comboInfo": null,
+        "costPrice": 11500000.00,
+        "currencyCode": "VND",
+        "discountAmount": 13900000.00,
+        "finalPrice": 0.00,
+        "price": 13900000.00,
+        "productId": 6,
+        "promotionCode": "APPLE1TRIEU",
+        "promotionName": "Ưu đãi MacBook tháng 3",
+        "sku": "ASUS-VB15-I5-8-512",
+        "variantId": 10,
+        "variantName": "Core i5 / 8GB / 512GB"
+    }
+}
+
+3.3 Validate ma khuyen mai
+GET /api/promotions/validate?code=NEWCUST500K&orderTotal=15000000
+-> {
+    "minOrderAmount": 15000000.00,
+    "discountValue": 500000.00,
+    "code": "NEWCUST500K",
+    "valid": true,
+    "discountType": "FIXED",
+    "endDate": "2026-03-31T23:59:59",
+    "discountAmount": 0.00,
+    "message": "Mã hợp lệ"
+}
+
+3.4 Tinh gia don hang
+POST /api/prices/calculate-order
+{
+  "customerId": 1,
+  "items": [
+    {"variantId":10,"quantity":2},
+    {"variantId":3,"quantity":1}
+  ]
+}
+-> {
+    "success": true,
+    "message": "Success",
+    "data": {
+        "subtotal": 42300000.00,
+        "discountTotal": 42300000.00,
+        "finalTotal": 0.00,
+        "items": [
+            {
+                "variantId": 10,
+                "variantName": "Core i5 / 8GB / 512GB",
+                "quantity": 2,
+                "unitPrice": 13900000.00,
+                "finalUnitPrice": 0.00,
+                "freeQty": 0,
+                "lineSubtotal": 27800000.00,
+                "lineDiscount": 27800000.00,
+                "lineFinal": 0.00,
+                "promotionCode": "APPLE1TRIEU",
+                "promotionName": "Ưu đãi MacBook tháng 3"
+            },
+            {
+                "variantId": 3,
+                "variantName": "Core i5 / 8GB / 256GB",
+                "quantity": 1,
+                "unitPrice": 14500000.00,
+                "finalUnitPrice": 0.00,
+                "freeQty": 0,
+                "lineSubtotal": 14500000.00,
+                "lineDiscount": 14500000.00,
+                "lineFinal": 0.00,
+                "promotionCode": "APPLE1TRIEU",
+                "promotionName": "Ưu đãi MacBook tháng 3"
+            }
+        ]
+    }
+}
+
+3.5 Gia toi uu theo khach hang
+GET /api/prices/variants/16/effective/customer/1
+-> {
+    "success": true,
+    "message": "Success",
+    "data": {
+        "comboInfo": null,
+        "costPrice": 24000000.00,
+        "currencyCode": "VND",
+        "discountAmount": 28990000.00,
+        "finalPrice": 0.00,
+        "price": 28990000.00,
+        "productId": 9,
+        "promotionCode": "APPLE1TRIEU",
+        "promotionName": "Ưu đãi MacBook tháng 3",
+        "sku": "APPLE-MBA-M3-8-256-MN",
+        "variantId": 16,
+        "variantName": "M3 / 8GB / 256GB / Midnight"
+    }
+}
+
+3.6 Gia tren danh sach san pham
+GET /api/products?page=0
+-> {
+    "content": [
+        {
+            "attributes": null,
+            "categoryId": 2,
+            "createdAt": "2026-02-01T08:00:00",
+            "currencyCode": "VND",
+            "description": "Laptop mỏng nhẹ OLED, Core Ultra 5 125H",
+            "id": 12,
+            "imageUrl": null,
+            "images": [],
+            "inStock": true,
+            "isFaulty": false,
+            "isNew": true,
+            "isVisible": true,
+            "minPrice": 22900000.00,
+            "name": "Acer Swift Go 14",
+            "promotionCode": "APPLE1TRIEU",
+            "promotionName": "Ưu đãi MacBook tháng 3",
+            "promotionPrice": 0.00,
+            "sku": "ACER-SWG14-2025",
+            "tags": [
+                "new-arrival",
+                "thin-light"
+            ],
+            "totalStock": 9,
+            "variantId": 21
+        },
+        {
+            "attributes": null,
+            "categoryId": 3,
+            "createdAt": "2026-01-15T08:00:00",
+            "currencyCode": "VND",
+            "description": "Laptop gaming RTX 4060, Core i7-13620H, 144Hz",
+            "id": 11,
+            "imageUrl": null,
+            "images": [],
+            "inStock": true,
+            "isFaulty": false,
+            "isNew": true,
+            "isVisible": true,
+            "minPrice": 29900000.00,
+            "name": "MSI Katana 15 B13V",
+            "promotionCode": "APPLE1TRIEU",
+            "promotionName": "Ưu đãi MacBook tháng 3",
+            "promotionPrice": 0.00,
+            "sku": "MSI-KAT15-B13V",
+            "tags": [
+                "new-arrival",
+                "gaming"
+            ],
+            "totalStock": 10,
+            "variantId": 20
+        },
+        {
+            "attributes": null,
+            "categoryId": 5,
+            "createdAt": "2025-12-01T08:00:00",
+            "currencyCode": "VND",
+            "description": "MacBook Pro chip M3 Pro, màn hình Liquid Retina XDR",
+            "id": 10,
+            "imageUrl": null,
+            "images": [],
+            "inStock": true,
+            "isFaulty": false,
+            "isNew": false,
+            "isVisible": true,
+            "minPrice": 54990000.00,
+            "name": "Apple MacBook Pro M3 Pro 14\"",
+            "promotionCode": "APPLE1TRIEU",
+            "promotionName": "Ưu đãi MacBook tháng 3",
+            "promotionPrice": 0.00,
+            "sku": "APPLE-MBP-M3P-14",
+            "tags": [
+                "apple",
+                "workstation"
+            ],
+            "totalStock": 7,
+            "variantId": 18
+        },
+        {
+            "attributes": null,
+            "categoryId": 5,
+            "createdAt": "2026-01-01T08:00:00",
+            "currencyCode": "VND",
+            "description": "MacBook Air chip M3, màn hình Liquid Retina 13.6\"",
+            "id": 9,
+            "imageUrl": null,
+            "images": [],
+            "inStock": true,
+            "isFaulty": false,
+            "isNew": true,
+            "isVisible": true,
+            "minPrice": 28990000.00,
+            "name": "Apple MacBook Air M3 13\"",
+            "promotionCode": "APPLE1TRIEU",
+            "promotionName": "Ưu đãi MacBook tháng 3",
+            "promotionPrice": 0.00,
+            "sku": "APPLE-MBA-M3-13",
+            "tags": [
+                "new-arrival",
+                "apple",
+                "thin-light"
+            ],
+            "totalStock": 20,
+            "variantId": 16
+        },
+        {
+            "attributes": null,
+            "categoryId": 3,
+            "createdAt": "2026-01-10T08:00:00",
+            "currencyCode": "VND",
+            "description": "Laptop gaming phổ thông RTX 3050, Ryzen 5 7535H",
+            "id": 8,
+            "imageUrl": null,
+            "images": [],
+            "inStock": true,
+            "isFaulty": false,
+            "isNew": true,
+            "isVisible": true,
+            "minPrice": 18500000.00,
+            "name": "Lenovo IdeaPad Gaming 3",
+            "promotionCode": "APPLE1TRIEU",
+            "promotionName": "Ưu đãi MacBook tháng 3",
+            "promotionPrice": 0.00,
+            "sku": "LEN-IDG3-2025",
+            "tags": [
+                "new-arrival",
+                "gaming"
+            ],
+            "totalStock": 22,
+            "variantId": 14
+        },
+        {
+            "attributes": null,
+            "categoryId": 2,
+            "createdAt": "2025-12-01T08:00:00",
+            "currencyCode": "VND",
+            "description": "Laptop doanh nhân bền bỉ, Core i5-1335U, bảo mật cao",
+            "id": 7,
+            "imageUrl": null,
+            "images": [],
+            "inStock": true,
+            "isFaulty": false,
+            "isNew": false,
+            "isVisible": true,
+            "minPrice": 18900000.00,
+            "name": "Lenovo ThinkPad E14 Gen5",
+            "promotionCode": "APPLE1TRIEU",
+            "promotionName": "Ưu đãi MacBook tháng 3",
+            "promotionPrice": 0.00,
+            "sku": "LEN-TPE14-G5",
+            "tags": [
+                "office"
+            ],
+            "totalStock": 17,
+            "variantId": 12
+        },
+        {
+            "attributes": null,
+            "categoryId": 2,
+            "createdAt": "2025-12-01T08:00:00",
+            "currencyCode": "VND",
+            "description": "Laptop văn phòng mỏng nhẹ Core i5-1235U",
+            "id": 6,
+            "imageUrl": null,
+            "images": [],
+            "inStock": true,
+            "isFaulty": false,
+            "isNew": false,
+            "isVisible": true,
+            "minPrice": 13900000.00,
+            "name": "Asus VivoBook 15",
+            "promotionCode": "APPLE1TRIEU",
+            "promotionName": "Ưu đãi MacBook tháng 3",
+            "promotionPrice": 0.00,
+            "sku": "ASUS-VB15-X1504",
+            "tags": [
+                "bestseller",
+                "office",
+                "thin-light"
+            ],
+            "totalStock": 45,
+            "variantId": 10
+        },
+        {
+            "attributes": null,
+            "categoryId": 3,
+            "createdAt": "2026-01-05T08:00:00",
+            "currencyCode": "VND",
+            "description": "Laptop gaming cao cấp RTX 4070, Core i9-13980HX",
+            "id": 5,
+            "imageUrl": null,
+            "images": [],
+            "inStock": true,
+            "isFaulty": false,
+            "isNew": true,
+            "isVisible": true,
+            "minPrice": 55900000.00,
+            "name": "Asus ROG Strix G16",
+            "promotionCode": "APPLE1TRIEU",
+            "promotionName": "Ưu đãi MacBook tháng 3",
+            "promotionPrice": 0.00,
+            "sku": "ASUS-ROG-G16-2025",
+            "tags": [
+                "new-arrival",
+                "gaming"
+            ],
+            "totalStock": 8,
+            "variantId": 8
+        },
+        {
+            "attributes": null,
+            "categoryId": 3,
+            "createdAt": "2025-12-01T08:00:00",
+            "currencyCode": "VND",
+            "description": "Laptop gaming tầm trung RTX 3050, Core i5-12450H",
+            "id": 4,
+            "imageUrl": null,
+            "images": [],
+            "inStock": true,
+            "isFaulty": false,
+            "isNew": false,
+            "isVisible": true,
+            "minPrice": 21500000.00,
+            "name": "HP Victus 15 Gaming",
+            "promotionCode": "APPLE1TRIEU",
+            "promotionName": "Ưu đãi MacBook tháng 3",
+            "promotionPrice": 0.00,
+            "sku": "HP-VIC15-2023",
+            "tags": [
+                "gaming",
+                "sale"
+            ],
+            "totalStock": 28,
+            "variantId": 6
+        },
+        {
+            "attributes": null,
+            "categoryId": 2,
+            "createdAt": "2025-12-01T08:00:00",
+            "currencyCode": "VND",
+            "description": "Laptop 2-in-1 cao cấp OLED, Core i7-1355U",
+            "id": 3,
+            "imageUrl": null,
+            "images": [],
+            "inStock": true,
+            "isFaulty": false,
+            "isNew": false,
+            "isVisible": true,
+            "minPrice": 38900000.00,
+            "name": "HP Spectre x360 14",
+            "promotionCode": "APPLE1TRIEU",
+            "promotionName": "Ưu đãi MacBook tháng 3",
+            "promotionPrice": 0.00,
+            "sku": "HP-SPECT-X360-14",
+            "tags": [
+                "thin-light"
+            ],
+            "totalStock": 5,
+            "variantId": 5
+        },
+        {
+            "attributes": null,
+            "categoryId": 2,
+            "createdAt": "2025-12-01T08:00:00",
+            "currencyCode": "VND",
+            "description": "Laptop văn phòng phổ thông Core i5-1235U",
+            "id": 2,
+            "imageUrl": null,
+            "images": [],
+            "inStock": true,
+            "isFaulty": false,
+            "isNew": false,
+            "isVisible": true,
+            "minPrice": 14500000.00,
+            "name": "Dell Inspiron 15 3520",
+            "promotionCode": "APPLE1TRIEU",
+            "promotionName": "Ưu đãi MacBook tháng 3",
+            "promotionPrice": 0.00,
+            "sku": "DELL-INS15-3520",
+            "tags": [
+                "bestseller",
+                "office"
+            ],
+            "totalStock": 27,
+            "variantId": 3
+        },
+        {
+            "attributes": null,
+            "categoryId": 4,
+            "createdAt": "2025-12-01T08:00:00",
+            "currencyCode": "VND",
+            "description": "Laptop cao cấp màn hình OLED 15.6\", Core i7-13700H",
+            "id": 1,
+            "imageUrl": null,
+            "images": [],
+            "inStock": true,
+            "isFaulty": false,
+            "isNew": false,
+            "isVisible": true,
+            "minPrice": 42900000.00,
+            "name": "Dell XPS 15 9530",
+            "promotionCode": "APPLE1TRIEU",
+            "promotionName": "Ưu đãi MacBook tháng 3",
+            "promotionPrice": 0.00,
+            "sku": "DELL-XPS15-9530",
+            "tags": [
+                "bestseller",
+                "workstation"
+            ],
+            "totalStock": 11,
+            "variantId": 1
+        }
+    ],
+    "empty": false,
+    "first": true,
+    "last": true,
+    "number": 0,
+    "numberOfElements": 12,
+    "pageable": {
+        "offset": 0,
+        "pageNumber": 0,
+        "pageSize": 20,
+        "paged": true,
+        "sort": {
+            "empty": false,
+            "sorted": true,
+            "unsorted": false
+        },
+        "unpaged": false
+    },
+    "size": 20,
+    "sort": {
+        "empty": false,
+        "sorted": true,
+        "unsorted": false
+    },
+    "totalElements": 12,
+    "totalPages": 1
+}
+
+3.7 Gia tren chi tiet san pham
+GET /api/products/9
+
+3.8 Gia chi tiet theo khach hang
+GET /api/prices/variants/8/effective/customer/13
+-> {
+    "attributes": null,
+    "categoryId": 5,
+    "createdAt": "2026-01-01T08:00:00",
+    "currencyCode": "VND",
+    "description": "MacBook Air chip M3, màn hình Liquid Retina 13.6\"",
+    "id": 9,
+    "imageUrl": null,
+    "images": [],
+    "inStock": true,
+    "isFaulty": false,
+    "isNew": true,
+    "isVisible": true,
+    "minPrice": 28990000.00,
+    "name": "Apple MacBook Air M3 13\"",
+    "promotionCode": "APPLE1TRIEU",
+    "promotionName": "Ưu đãi MacBook tháng 3",
+    "promotionPrice": 0.00,
+    "sku": "APPLE-MBA-M3-13",
+    "tags": [
+        "new-arrival",
+        "apple",
+        "thin-light"
+    ],
+    "totalStock": 20,
+    "variantId": 16
+}
+
+4. Gia theo doi tuong khach hang
+
+4.1 Tao bang gia theo nhom khach hang
+Su dung Promotion voi customerTypes va vipTiers
+
+4.2 Gia theo nhom khach hang
+GET /api/prices/products/9/customer/1
+-> {
+    "success": true,
+    "message": "Success",
+    "data": [
+        {
+            "comboInfo": null,
+            "costPrice": 24000000.00,
+            "currencyCode": "VND",
+            "discountAmount": 28990000.00,
+            "finalPrice": 0.00,
+            "price": 28990000.00,
+            "productId": 9,
+            "promotionCode": "APPLE1TRIEU",
+            "promotionName": "Ưu đãi MacBook tháng 3",
+            "sku": "APPLE-MBA-M3-8-256-MN",
+            "variantId": 16,
+            "variantName": "M3 / 8GB / 256GB / Midnight"
+        },
+        {
+            "comboInfo": null,
+            "costPrice": 33000000.00,
+            "currencyCode": "VND",
+            "discountAmount": 38990000.00,
+            "finalPrice": 0.00,
+            "price": 38990000.00,
+            "productId": 9,
+            "promotionCode": "APPLE1TRIEU",
+            "promotionName": "Ưu đãi MacBook tháng 3",
+            "sku": "APPLE-MBA-M3-16-512-SL",
+            "variantId": 17,
+            "variantName": "M3 / 16GB / 512GB / Starlight"
+        }
+    ]
+}
+
+4.3 Chinh sua bang gia nhom KH
+PUT /api/promotions/5
+{
+  "discountValue": 5,
+  "vipTiers": ["GOLD"]
+}
+
+4.4 Ap dung khuyen mai theo VIP
+GET /api/prices/variants/18/effective/customer/7
+-> {
+    "success": true,
+    "message": "Success",
+    "data": {
+        "comboInfo": null,
+        "costPrice": 47000000.00,
+        "currencyCode": "VND",
+        "discountAmount": 54990000.00,
+        "finalPrice": 0.00,
+        "price": 54990000.00,
+        "productId": 10,
+        "promotionCode": "APPLE1TRIEU",
+        "promotionName": "Ưu đãi MacBook tháng 3",
+        "sku": "APPLE-MBP-M3P-18-512-SB",
+        "variantId": 18,
+        "variantName": "M3 Pro / 18GB / 512GB / Space Black"
+    }
+}
+
+4.5 Chi tiet gia theo khach hang
+GET /api/prices/products/10/customer/13
+-> {
+    "success": true,
+    "message": "Success",
+    "data": [
+        {
+            "comboInfo": null,
+            "costPrice": 47000000.00,
+            "currencyCode": "VND",
+            "discountAmount": 54990000.00,
+            "finalPrice": 0.00,
+            "price": 54990000.00,
+            "productId": 10,
+            "promotionCode": "APPLE1TRIEU",
+            "promotionName": "Ưu đãi MacBook tháng 3",
+            "sku": "APPLE-MBP-M3P-18-512-SB",
+            "variantId": 18,
+            "variantName": "M3 Pro / 18GB / 512GB / Space Black"
+        },
+        {
+            "comboInfo": null,
+            "costPrice": 62000000.00,
+            "currencyCode": "VND",
+            "discountAmount": 72990000.00,
+            "finalPrice": 0.00,
+            "price": 72990000.00,
+            "productId": 10,
+            "promotionCode": "APPLE1TRIEU",
+            "promotionName": "Ưu đãi MacBook tháng 3",
+            "sku": "APPLE-MBP-M3P-36-1T-SV",
+            "variantId": 19,
+            "variantName": "M3 Pro / 36GB / 1TB / Silver"
+        }
+    ]
+}
+
+5. Gia theo chien dich
+
+5.1 Tao chien dich
+POST /api/promotions
+{
+  "code":"CAMPAIGN_Q2_2026",
+  "discountType":"PERCENT",
+  "discountValue":7,
+  "scope":"ALL",
+  "priority":2
+}
+
+5.2 Gia ap dung chien dich
+GET /api/prices/products/5
+
+5.3 Cap nhat chien dich
+PUT /api/promotions/4
+
+
+6. Ap dung khuyen mai trong don hang
+
+6.1 Tao don hang
+POST /api/orders
+{
+  "customerId":1,
+  "paymentMethod":"CASH",
+  "channel":"OFFLINE",
+  "promotionCode":"VIP2026",
+  "items":[
+    {"variantId":1,"quantity":1},
+    {"variantId":16,"quantity":1}
+  ]
+}
+
+6.1b Validate ma truoc khi tao don
+GET /api/promotions/validate?code=GAMING10&orderTotal=20000000
+
+6.2 Chi tiet don hang
+GET /api/orders/17
+
+
+7. Bao cao va Dashboard
+
+7.1 Khuyen mai dang ap dung
+GET /api/reports/promotions/active
+
+7.2 Bao cao tong hop
+GET /api/reports/promotions/summary?period=month
+GET /api/reports/promotions/summary?period=week
+
+7.3 Bao cao theo thoi gian
+GET /api/promotions/report?period=week
+GET /api/promotions/report?period=month
+
+7.4 Dashboard gia va khuyen mai
+GET /api/prices/dashboard
+
+7.5 Canh bao xung dot khuyen mai
+GET /api/reports/promotions/conflicts
+GET /api/promotions/conflicts

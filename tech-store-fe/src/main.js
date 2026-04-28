@@ -1,0 +1,29 @@
+import { createApp } from "vue";
+import App from "./App.vue";
+import router from "./router";
+
+import { createPinia } from "pinia";
+
+// Element Plus
+import ElementPlus from "element-plus";
+import "element-plus/dist/index.css";
+import * as ElementPlusIconsVue from "@element-plus/icons-vue";
+
+// Keep Bootstrap CSS + icons for existing layout utility classes (NO bootstrap JS)
+import "bootstrap/dist/css/bootstrap.min.css";
+import "bootstrap-icons/font/bootstrap-icons.css";
+
+import "./style.css";
+
+const app = createApp(App);
+
+app.use(createPinia());
+app.use(router);
+app.use(ElementPlus);
+
+// Register all Element Plus icons globally
+for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
+  app.component(key, component);
+}
+
+app.mount("#app");

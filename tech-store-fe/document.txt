@@ -1,0 +1,386 @@
+# API Pricing & Promotion — Test Guide
+
+> Base URL: `http://localhost:8080`  
+> Tất cả response đều wrap trong `ApiResponse<T>` trừ `ReportController` trả thẳng `ResponseEntity`.
+
+---
+
+## 🏷️ 1. Quản lý bảng giá sản phẩm
+
+### 1.1 Tạo bảng giá
+`POST /api/prices/variants/{variantId}`
+```json
+{
+  "currencyCode": "VND",
+  "price": 250000,
+  "costPrice": 150000,
+  "reason": "MANUAL"
+}
+```
+
+### 1.2 Hiển thị danh sách giá theo sản phẩm
+`GET /api/prices/products/{productId}`
+
+### 1.2b Hiển thị giá theo sản phẩm + khách hàng cụ thể
+`GET /api/prices/products/{productId}/customer/{customerId}`
+
+### 1.3a Chỉnh sửa giá
+`PUT /api/prices/history/{id}`
+```json
+{
+  "currencyCode": "VND",
+  "price": 300000,
+  "costPrice": 180000,
+  "reason": "PRICE_UPDATE"
+}
+```
+
+### 1.3b Xóa giá (rollback về giá trước)
+`DELETE /api/prices/history/{id}`
+
+### 1.4 Hiển thị giá hiện tại trên danh sách sản phẩm
+`GET /api/products?page=0`
+> `ProductResponse` trả `minPrice`, `promotionPrice`, `promotionName`, `promotionCode`.
+
+### 1.5 Thiết lập tiền tệ mặc định
+`PUT /api/settings/currency/default`
+```json
+{ "currencyCode": "VND" }
+```
+
+`GET /api/settings/currency/default` — Xem tiền tệ hiện tại  
+`GET /api/settings` — Xem tất cả settings
+
+### 1.6 Lịch sử giá sản phẩm
+`GET /api/prices/variants/{variantId}/history`
+
+### 1.7 Bảng giá tự động theo ngày (dùng Promotion với startDate/endDate)
+`POST /api/promotions` — tạo promotion với `startDate` và `endDate` cụ thể, hệ thống tự áp dụng khi đến ngày.
+```json
+{
+  "code": "AUTO_JUL25",
+  "name": "Giá tự động tháng 7",
+  "discountType": "PERCENT",
+  "discountValue": 8,
+  "startDate": "2025-07-01T00:00:00",
+  "endDate": "2025-07-31T23:59:59",
+  "scope": "ALL",
+  "priority": 1,
+  "isActive": true
+}
+```
+
+### 1.8 Cảnh báo giá thấp hơn giá nhập — 1 variant
+`GET /api/prices/variants/{variantId}/cost-warning`
+
+### 1.9 ✅ Cảnh báo giá xung đột — toàn bộ hệ thống
+`GET /api/prices/conflicts`
+> Trả danh sách tất cả variant có `price < costPrice`.
+
+---
+
+## 🎁 2. Quản lý khuyến mãi
+
+### 2.1 Tạo khuyến mãi thường
+`POST /api/promotions`
+```json
+{
+  "code": "SUMMER2025",
+  "name": "Khuyến mãi hè 2025",
+  "discountType": "PERCENT",
+  "discountValue": 10,
+  "startDate": "2025-06-01T00:00:00",
+  "endDate": "2025-08-31T23:59:59",
+  "scope": "PRODUCT",
+  "productIds": [1, 2, 3],
+  "priority": 1,
+  "stackable": false,
+  "isActive": true
+}
+```
+
+### 2.1b Tạo khuyến mãi combo (mua 2 tặng 1)
+`POST /api/promotions`
+```json
+{
+  "code": "BUY2GET1",
+  "name": "Mua 2 tặng 1",
+  "startDate": "2025-07-01T00:00:00",
+  "endDate": "2025-07-31T23:59:59",
+  "scope": "ALL",
+  "buyQty": 2,
+  "getQty": 1,
+  "priority": 3,
+  "isActive": true
+}
+```
+> Combo không cần `discountType`/`discountValue`.
+
+### 2.1c Tạo khuyến mãi có giới hạn số lần dùng
+`POST /api/promotions`
+```json
+{
+  "code": "LIMITED100",
+  "name": "Chỉ 100 lượt dùng",
+  "discountType": "PERCENT",
+  "discountValue": 20,
+  "startDate": "2025-07-01T00:00:00",
+  "endDate": "2025-07-31T23:59:59",
+  "scope": "ALL",
+  "usageLimit": 100,
+  "priority": 1,
+  "isActive": true
+}
+```
+
+### 2.1d Tạo khuyến mãi theo nhóm khách hàng VIP
+`POST /api/promotions`
+```json
+{
+  "code": "VIP_GOLD_15",
+  "name": "Giá dành cho VIP Gold+",
+  "discountType": "PERCENT",
+  "discountValue": 15,
+  "startDate": "2025-01-01T00:00:00",
+  "endDate": "2025-12-31T23:59:59",
+  "scope": "ALL",
+  "customerTypes": ["VIP"],
+  "vipTiers": ["GOLD", "PLATINUM", "DIAMOND"],
+  "priority": 5,
+  "isActive": true
+}
+```
+
+### 2.2 Hiển thị danh sách khuyến mãi
+`GET /api/promotions` — tất cả  
+`GET /api/promotions?activeOnly=true` — đang hoạt động
+
+### 2.3a Chỉnh sửa khuyến mãi
+`PUT /api/promotions/{id}`
+```json
+{
+  "name": "Tên mới",
+  "discountValue": 15,
+  "endDate": "2025-09-30T23:59:59",
+  "isActive": true
+}
+```
+
+### 2.3b Xóa khuyến mãi (soft deactivate)
+`DELETE /api/promotions/{id}`
+
+### 2.4 Hiển thị chi tiết khuyến mãi
+`GET /api/promotions/{id}`
+
+### 2.5 Kiểm tra trùng lặp khuyến mãi
+`GET /api/promotions/conflicts`
+
+### 2.6 Cảnh báo khuyến mãi sắp hết hạn
+`GET /api/promotions/expiring?withinDays=3`
+
+### 2.7 Khuyến mãi đang hoạt động
+`GET /api/promotions?activeOnly=true`
+
+### 2.8 Thiết lập ưu tiên (qua field `priority` khi tạo/cập nhật)
+`POST /api/promotions`
+```json
+{
+  "code": "HIGH_PRIORITY",
+  "name": "Khuyến mãi ưu tiên cao",
+  "discountType": "PERCENT",
+  "discountValue": 25,
+  "startDate": "2025-07-01T00:00:00",
+  "endDate": "2025-07-31T23:59:59",
+  "scope": "ALL",
+  "priority": 10,
+  "isActive": true
+}
+```
+
+---
+
+## 💰 3. Áp dụng khuyến mãi & tính giá
+
+### 3.1 Giá sau KM tự động cho variant
+`GET /api/prices/variants/{variantId}/effective`
+> Trả `price`, `finalPrice`, `discountAmount`, `promotionCode`, `promotionName`.
+
+### 3.2 Giá combo (comboInfo)
+`GET /api/prices/variants/{variantId}/effective`
+> Nếu KM là combo, response có thêm `comboInfo: "Mua 2 tặng 1"`.
+
+### 3.3 Kiểm tra giới hạn lần dùng
+Được kiểm tra tự động khi gọi effective price hoặc khi tạo đơn. Để test thủ công:  
+`GET /api/promotions/validate?code=LIMITED100&orderTotal=500000`
+
+### 3.4 ✅ Tính giá cuối cùng cho nhiều sản phẩm (giỏ hàng)
+`POST /api/prices/calculate-order`
+```json
+{
+  "customerId": 1,
+  "items": [
+    { "variantId": 1, "quantity": 3 },
+    { "variantId": 2, "quantity": 2 }
+  ]
+}
+```
+> Trả `subtotal`, `discountTotal`, `finalTotal` và breakdown từng dòng với `freeQty` (combo), `promotionCode`.
+
+### 3.5 Tối ưu giá (best price tự động)
+`GET /api/prices/variants/{variantId}/effective/customer/{customerId}`
+> Tự chọn promotion cho giá thấp nhất.
+
+### 3.6–3.7 Giá KM trên danh sách sản phẩm
+`GET /api/products?page=0`  
+`GET /api/products/{id}`
+> `ProductResponse.promotionPrice` = giá sau KM, `promotionName`, `promotionCode`.
+
+### 3.8 Giá cuối cùng cho khách hàng (đầy đủ breakdown)
+`GET /api/prices/variants/{variantId}/effective/customer/{customerId}`
+> Trả `price` (gốc), `finalPrice`, `discountAmount`, `promotionCode`, `promotionName`, `comboInfo`.
+
+---
+
+## 👥 4. Giá theo đối tượng khách hàng
+
+### 4.1 Tạo bảng giá theo nhóm KH
+Dùng mục 2.1d — tạo Promotion với `customerTypes` và `vipTiers`.
+
+### 4.2 Hiển thị giá theo nhóm KH
+`GET /api/prices/products/{productId}/customer/{customerId}`
+
+### 4.3 Chỉnh sửa bảng giá nhóm KH
+`PUT /api/promotions/{id}`
+```json
+{
+  "discountValue": 20,
+  "vipTiers": ["GOLD", "PLATINUM", "DIAMOND"]
+}
+```
+
+### 4.4 Áp dụng KM theo nhóm KH
+`GET /api/prices/variants/{variantId}/effective/customer/{customerId}`
+
+### 4.5 Hiển thị chi tiết giá theo KH
+`GET /api/prices/products/{productId}/customer/{customerId}`
+
+---
+
+## 📣 5. Giá theo chiến dịch
+
+> Hệ thống dùng chung bảng Promotion. Chiến dịch = Promotion có scope rộng + priority phù hợp.
+
+### 5.1 Tạo bảng giá theo chiến dịch
+`POST /api/promotions`
+```json
+{
+  "code": "CAMPAIGN_Q3",
+  "name": "Chiến dịch Q3 2025",
+  "discountType": "PERCENT",
+  "discountValue": 12,
+  "startDate": "2025-07-01T00:00:00",
+  "endDate": "2025-09-30T23:59:59",
+  "scope": "ALL",
+  "priority": 2,
+  "isActive": true
+}
+```
+
+### 5.2 Hiển thị giá áp dụng chiến dịch
+`GET /api/prices/products/{productId}`
+
+### 5.3 Cập nhật chiến dịch
+`PUT /api/promotions/{id}`
+```json
+{
+  "name": "Chiến dịch Q3 2025 - Cập nhật",
+  "discountValue": 15,
+  "endDate": "2025-10-15T23:59:59"
+}
+```
+
+---
+
+## 🛒 6. Áp dụng khuyến mãi trong đơn hàng
+
+### 6.1 Áp dụng KM tự động khi tạo đơn
+`POST /api/orders`
+```json
+{
+  "customerId": 1,
+  "paymentMethod": "CASH",
+  "channel": "OFFLINE",
+  "promotionCode": "SUMMER2025",
+  "items": [
+    { "variantId": 1, "quantity": 2 },
+    { "variantId": 3, "quantity": 1 }
+  ]
+}
+```
+> `promotionCode` là optional. Nếu không truyền, VIP + Spin discount vẫn áp tự động.
+
+### 6.1b Validate mã trước khi tạo đơn
+`GET /api/promotions/validate?code=SUMMER2025&orderTotal=1500000`
+
+### 6.2–6.3 Hiển thị KM combo & giá combo trong đơn hàng
+`GET /api/orders/{orderId}`
+> `OrderDetailResponse` trả thêm: `promoCode`, `promoDiscount`, `comboInfo` (e.g. `"Mua 2 tặng 1"`), `vipDiscount`, `spinDiscount`.
+
+---
+
+## 📊 7. Báo cáo & Dashboard
+
+### 7.1 ✅ Báo cáo KM đang áp dụng
+`GET /api/reports/promotions/active`
+
+### 7.2 ✅ Báo cáo giá & KM
+`GET /api/reports/promotions/summary?period=month`  
+`GET /api/reports/promotions/summary?period=week`
+
+### 7.3 Tổng hợp theo tuần/tháng
+`GET /api/promotions/report?period=week`  
+`GET /api/promotions/report?period=month`
+> Trả `total`, `comboCount`, `usageLimitedCount`, `totalRedemptions`.
+
+### 7.4 Dashboard giá & KM
+`GET /api/prices/dashboard`
+> Trả `activePromotions`, `variantsBelowCost`, `expiringIn3Days`, `conflictCount`, `promotionConflicts`.
+
+### 7.5 ✅ Cảnh báo xung đột KM
+`GET /api/reports/promotions/conflicts`  
+hoặc `GET /api/promotions/conflicts`
+
+---
+
+## 📋 Bảng tóm tắt endpoint
+
+| # | Chức năng | Method | Endpoint |
+|---|-----------|--------|----------|
+| 1.1 | Tạo bảng giá | POST | `/api/prices/variants/{variantId}` |
+| 1.2 | Danh sách giá theo SP | GET | `/api/prices/products/{productId}` |
+| 1.3a | Chỉnh sửa giá | PUT | `/api/prices/history/{id}` |
+| 1.3b | Xóa giá | DELETE | `/api/prices/history/{id}` |
+| 1.4 | Giá trên danh sách SP | GET | `/api/products?page=0` |
+| 1.5 | Thiết lập tiền tệ | PUT | `/api/settings/currency/default` |
+| 1.6 | Lịch sử giá | GET | `/api/prices/variants/{id}/history` |
+| 1.8 | Cảnh báo giá < nhập (1 variant) | GET | `/api/prices/variants/{id}/cost-warning` |
+| 1.9 | Cảnh báo giá xung đột (toàn hệ thống) | GET | `/api/prices/conflicts` |
+| 2.1 | Tạo KM | POST | `/api/promotions` |
+| 2.2 | Danh sách KM | GET | `/api/promotions` |
+| 2.3a | Sửa KM | PUT | `/api/promotions/{id}` |
+| 2.3b | Xóa KM | DELETE | `/api/promotions/{id}` |
+| 2.4 | Chi tiết KM | GET | `/api/promotions/{id}` |
+| 2.5 | Trùng lặp KM | GET | `/api/promotions/conflicts` |
+| 2.6 | KM sắp hết hạn | GET | `/api/promotions/expiring?withinDays=3` |
+| 2.7 | KM đang hoạt động | GET | `/api/promotions?activeOnly=true` |
+| 3.1 | Giá sau KM (variant) | GET | `/api/prices/variants/{id}/effective` |
+| 3.4 | Tính giá đơn hàng | POST | `/api/prices/calculate-order` |
+| 3.5 | Tối ưu giá theo KH | GET | `/api/prices/variants/{id}/effective/customer/{cid}` |
+| 3.6 | Validate mã | GET | `/api/promotions/validate?code=X&orderTotal=Y` |
+| 4.2 | Giá theo nhóm KH | GET | `/api/prices/products/{pid}/customer/{cid}` |
+| 6.1 | Tạo đơn + áp KM | POST | `/api/orders` |
+| 6.2 | Chi tiết đơn + combo info | GET | `/api/orders/{id}` |
+| 7.1 | KM đang áp dụng | GET | `/api/reports/promotions/active` |
+| 7.2 | Báo cáo tổng hợp | GET | `/api/reports/promotions/summary?period=month` |
+| 7.4 | Dashboard | GET | `/api/prices/dashboard` |
+| 7.5 | Xung đột KM | GET | `/api/reports/promotions/conflicts` |

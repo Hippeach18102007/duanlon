@@ -1,0 +1,66 @@
+.sys {
+  min-height: 100vh;
+  background: #f6f7fb;
+}
+
+.aside {
+  background: #0b1220;
+  color: rgba(255, 255, 255, 0.92);
+  padding: 14px 12px;
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.brand {
+  padding: 10px 10px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.06);
+  cursor: pointer;
+}
+.brand-name {
+  font-weight: 900;
+  letter-spacing: -0.2px;
+}
+.brand-sub {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.pill {
+  margin-top: 12px;
+  padding: 10px 10px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.06);
+}
+.pill-k {
+  font-size: 12px;
+  opacity: 0.7;
+}
+.pill-v {
+  font-weight: 800;
+}
+
+.menu {
+  margin-top: 12px;
+  border-right: none;
+}
+
+.aside-foot {
+  margin-top: 14px;
+}
+
+.topbar {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+  display: flex;
+  align-items: center;
+}
+
+.page-title {
+  font-weight: 900;
+  letter-spacing: -0.2px;
+}
+
+.main {
+  padding: 16px;
+}

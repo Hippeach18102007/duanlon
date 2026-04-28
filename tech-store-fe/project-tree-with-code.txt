@@ -1,0 +1,2299 @@
+FILE: src/api/http.js
+import axios from "axios";
+import { clearLastAuthResponse, clearSession, getToken } from "../stores/auth";
+
+const http = axios.create({
+  baseURL: import.meta?.env?.VITE_API_BASE_URL || "http://localhost:8080",
+  timeout: 15000,
+});
+
+http.interceptors.request.use((config) => {
+  const token = getToken();
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
+
+http.interceptors.response.use(
+  (res) => res,
+  (err) => {
+    if (err?.response?.status === 401) {
+      clearSession();
+      clearLastAuthResponse();
+      window.dispatchEvent(
+        new CustomEvent("auth:logout", { detail: "401 Unauthorized" })
+      );
+    }
+    return Promise.reject(err);
+  }
+);
+
+export default http;
+FILE: src/api/promotions.api.js
+import http from "./http";
+
+export const promotionsApi = {
+  create(payload) {
+    return http.post("/api/promotions", payload);
+  },
+  list(activeOnly = false) {
+    return http.get("/api/promotions", { params: { activeOnly: !!activeOnly } });
+  },
+  getById(id) {
+    return http.get(`/api/promotions/${id}`);
+  },
+  update(id, payload) {
+    return http.put(`/api/promotions/${id}`, payload);
+  },
+  remove(id) {
+    return http.delete(`/api/promotions/${id}`);
+  },
+  getConflicts() {
+    return http.get("/api/promotions/conflicts");
+  },
+  getExpiring(withinDays = 3) {
+    return http.get("/api/promotions/expiring", { params: { withinDays } });
+  },
+  validate(code, orderTotal) {
+    return http.get("/api/promotions/validate", { params: { code, orderTotal } });
+  },
+  getReport(period = "month") {
+    return http.get("/api/promotions/report", { params: { period } });
+  },
+};FILE: src/api/prices.api.js
+import http from "./http";
+
+export const pricesApi = {
+  setVariantPrice(variantId, payload) {
+    return http.post(`/api/prices/variants/${variantId}`, payload);
+  },
+  listByProduct(productId) {
+    return http.get(`/api/prices/products/${productId}`);
+  },
+  listByProductForCustomer(productId, customerId) {
+    return http.get(`/api/prices/products/${productId}/customer/${customerId}`);
+  },
+  updateHistory(id, payload) {
+    return http.put(`/api/prices/history/${id}`, payload);
+  },
+  removeHistory(id) {
+    return http.delete(`/api/prices/history/${id}`);
+  },
+  getEffective(variantId) {
+    return http.get(`/api/prices/variants/${variantId}/effective`);
+  },
+  getEffectiveForCustomer(variantId, customerId) {
+    return http.get(`/api/prices/variants/${variantId}/effective/customer/${customerId}`);
+  },
+  getVariantHistory(variantId) {
+    return http.get(`/api/prices/variants/${variantId}/history`);
+  },
+  getCostWarning(variantId) {
+    return http.get(`/api/prices/variants/${variantId}/cost-warning`);
+  },
+  getConflicts() {
+    return http.get("/api/prices/conflicts");
+  },
+  calculateOrder(customerId, items) {
+    return http.post("/api/prices/calculate-order", { customerId, items });
+  },
+  getDashboard() {
+    return http.get("/api/prices/dashboard");
+  },
+};FILE: src/pages/system/PricingManager.vue
+<template>
+  <div class="pm-wrap">
+    <div class="pm-header">
+      <div>
+        <div class="pm-kicker">Admin · Pricing</div>
+        <div class="pm-title">Quản lý giá</div>
+      </div>
+    </div>
+
+    <el-tabs v-model="activeTab" class="pm-tabs">
+      <el-tab-pane label="Đặt giá variant" name="set">
+        <div class="pm-section-grid">
+          <div class="pm-panel">
+            <div class="pm-panel-head">
+              <span class="pm-panel-title">Đặt giá</span>
+              <span class="pm-endpoint"
+                >POST /api/prices/variants/{variantId}</span
+              >
+            </div>
+            <el-form :model="setForm" label-position="top" class="pm-form">
+              <div class="pm-form-row">
+                <el-form-item label="Variant ID">
+                  <el-input
+                    v-model.number="setForm.variantId"
+                    placeholder="VD: 5"
+                  />
+                </el-form-item>
+                <el-form-item label="Currency">
+                  <el-input
+                    v-model="setForm.currencyCode"
+                    placeholder="VND / USD"
+                  />
+                </el-form-item>
+              </div>
+              <div class="pm-form-row">
+                <el-form-item label="Giá bán (price)">
+                  <el-input-number
+                    v-model="setForm.price"
+                    :min="0"
+                    :max="999999999"
+                    class="w-100"
+                    :controls="false"
+                  />
+                </el-form-item>
+                <el-form-item label="Giá nhập (costPrice)">
+                  <el-input-number
+                    v-model="setForm.costPrice"
+                    :min="0"
+                    :max="999999999"
+                    class="w-100"
+                    :controls="false"
+                  />
+                </el-form-item>
+              </div>
+              <el-form-item label="Lý do (reason)">
+                <el-input
+                  v-model="setForm.reason"
+                  placeholder="MANUAL, PROMO_ENDED..."
+                />
+              </el-form-item>
+              <div class="pm-form-footer">
+                <el-button
+                  type="primary"
+                  :loading="setLoading"
+                  @click="setPrice"
+                  >Lưu giá</el-button
+                >
+              </div>
+            </el-form>
+          </div>
+
+          <div class="pm-panel">
+            <div class="pm-panel-head">
+              <span class="pm-panel-title">Giá hiệu lực (combo)</span>
+              <span class="pm-endpoint">GET /effective</span>
+            </div>
+            <div class="pm-hint">Sử dụng Variant ID đã nhập bên trái.</div>
+            <div class="pm-action-row">
+              <el-button :loading="effLoading" @click="loadEffective"
+                >Tải giá hiệu lực</el-button
+              >
+            </div>
+            <div v-if="effective" class="pm-result-box mt-2">
+              <div class="pm-result-grid">
+                <div class="pm-result-item">
+                  <div class="pm-result-label">SKU</div>
+                  <div class="pm-result-value">
+                    {{ effective.data?.sku ?? effective.sku ?? "—" }}
+                  </div>
+                </div>
+                <div class="pm-result-item">
+                  <div class="pm-result-label">Base price</div>
+                  <div class="pm-result-value">
+                    {{ fmtMoney(effective.data?.price ?? effective.price) }}
+                  </div>
+                </div>
+                <div class="pm-result-item">
+                  <div class="pm-result-label">Final price</div>
+                  <div class="pm-result-value pm-result-highlight">
+                    {{
+                      fmtMoney(
+                        effective.data?.finalPrice ?? effective.finalPrice,
+                      )
+                    }}
+                  </div>
+                </div>
+                <div class="pm-result-item">
+                  <div class="pm-result-label">Promotion</div>
+                  <div class="pm-result-value">
+                    <el-tag
+                      v-if="
+                        effective.data?.promotionCode ?? effective.promotionCode
+                      "
+                      type="warning"
+                      size="small"
+                    >
+                      {{
+                        effective.data?.promotionCode ?? effective.promotionCode
+                      }}
+                    </el-tag>
+                    <span v-else class="pm-muted">—</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <el-divider />
+
+            <div class="pm-panel-head" style="margin-bottom: 12px">
+              <span class="pm-panel-title">Giá cuối cùng cho khách</span>
+              <span class="pm-endpoint">GET /effective/customer/{id}</span>
+            </div>
+            <div class="pm-action-row">
+              <el-input
+                v-model.number="customerIdForPrice"
+                placeholder="Customer ID"
+                style="width: 150px"
+              />
+              <el-button
+                :loading="effCustLoading"
+                @click="loadEffectiveForCustomer"
+                >Tải</el-button
+              >
+            </div>
+            <div v-if="effectiveForCustomer" class="pm-result-box mt-2">
+              <div class="pm-result-grid">
+                <div class="pm-result-item">
+                  <div class="pm-result-label">Variant</div>
+                  <div class="pm-result-value">
+                    {{
+                      effectiveForCustomer.data?.variantName ??
+                      effectiveForCustomer.variantName ??
+                      "—"
+                    }}
+                  </div>
+                </div>
+                <div class="pm-result-item">
+                  <div class="pm-result-label">Base price</div>
+                  <div class="pm-result-value">
+                    {{
+                      fmtMoney(
+                        effectiveForCustomer.data?.price ??
+                          effectiveForCustomer.price,
+                      )
+                    }}
+                  </div>
+                </div>
+                <div class="pm-result-item">
+                  <div class="pm-result-label">Final price</div>
+                  <div class="pm-result-value pm-result-highlight">
+                    {{
+                      fmtMoney(
+                        effectiveForCustomer.data?.finalPrice ??
+                          effectiveForCustomer.finalPrice,
+                      )
+                    }}
+                  </div>
+                </div>
+                <div class="pm-result-item">
+                  <div class="pm-result-label">Promotion</div>
+                  <div class="pm-result-value">
+                    <el-tag
+                      v-if="
+                        effectiveForCustomer.data?.promotionCode ??
+                        effectiveForCustomer.promotionCode
+                      "
+                      type="warning"
+                      size="small"
+                    >
+                      {{
+                        effectiveForCustomer.data?.promotionCode ??
+                        effectiveForCustomer.promotionCode
+                      }}
+                    </el-tag>
+                    <span v-else class="pm-muted">—</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </el-tab-pane>
+
+      <el-tab-pane label="Lịch sử giá" name="history">
+        <div class="pm-section-label">Giá áp dụng chiến dịch theo product</div>
+        <div class="pm-endpoint mb-2">GET /api/prices/products/{productId}</div>
+        <div class="pm-action-row mb-3">
+          <el-input
+            v-model.number="productId"
+            placeholder="Product ID"
+            style="width: 160px"
+          />
+          <el-button
+            :loading="prodLoading"
+            @click="loadByProduct"
+            type="primary"
+            plain
+            >Tải</el-button
+          >
+        </div>
+        <el-table
+          v-if="productPrices.length"
+          :data="productPrices"
+          border
+          size="small"
+          class="pm-table mb-4"
+        >
+          <el-table-column prop="variantId" label="Variant ID" width="100" />
+          <el-table-column
+            prop="variantName"
+            label="Tên variant"
+            min-width="160"
+          />
+          <el-table-column prop="sku" label="SKU" width="150" />
+          <el-table-column label="Base price" width="130">
+            <template #default="{ row }">{{ fmtMoney(row.price) }}</template>
+          </el-table-column>
+          <el-table-column label="Final price" width="130">
+            <template #default="{ row }">
+              <span
+                :class="row.finalPrice < row.price ? 'pm-price-discount' : ''"
+                >{{ fmtMoney(row.finalPrice) }}</span
+              >
+            </template>
+          </el-table-column>
+          <el-table-column label="Promotion" width="130">
+            <template #default="{ row }">
+              <el-tag v-if="row.promotionCode" type="warning" size="small">{{
+                row.promotionCode
+              }}</el-tag>
+              <span v-else class="pm-muted">—</span>
+            </template>
+          </el-table-column>
+        </el-table>
+
+        <el-divider />
+
+        <div class="pm-section-label">Lịch sử giá theo variant</div>
+        <div class="pm-endpoint mb-2">
+          GET /api/prices/variants/{variantId}/history
+        </div>
+        <div class="pm-action-row mb-3">
+          <el-input
+            v-model.number="histVariantId"
+            placeholder="Variant ID"
+            style="width: 160px"
+          />
+          <el-button
+            :loading="histLoading"
+            @click="loadVariantHistory"
+            type="primary"
+            plain
+            >Tải</el-button
+          >
+        </div>
+        <el-table
+          v-if="variantHistory.length"
+          :data="variantHistory"
+          border
+          size="small"
+          class="pm-table"
+        >
+          <el-table-column prop="id" label="ID" width="70" />
+          <el-table-column label="Giá bán" width="130">
+            <template #default="{ row }">{{ fmtMoney(row.price) }}</template>
+          </el-table-column>
+          <el-table-column label="Giá nhập" width="130">
+            <template #default="{ row }">{{
+              row.costPrice ? fmtMoney(row.costPrice) : "—"
+            }}</template>
+          </el-table-column>
+          <el-table-column prop="reason" label="Lý do" min-width="120" />
+          <el-table-column label="Hiệu lực từ" width="160">
+            <template #default="{ row }">{{
+              fmtDate(row.effectiveFrom)
+            }}</template>
+          </el-table-column>
+          <el-table-column label="Hiệu lực đến" width="160">
+            <template #default="{ row }">{{
+              row.effectiveTo ? fmtDate(row.effectiveTo) : "—"
+            }}</template>
+          </el-table-column>
+          <el-table-column
+            prop="createdByUsername"
+            label="Người tạo"
+            width="110"
+          />
+          <el-table-column label="Thao tác" width="140" fixed="right">
+            <template #default="{ row }">
+              <el-button size="small" @click="openEdit(row)">Sửa</el-button>
+              <el-button
+                size="small"
+                type="danger"
+                plain
+                @click="removeHistory(row)"
+                >Xóa</el-button
+              >
+            </template>
+          </el-table-column>
+        </el-table>
+        <el-empty
+          v-else-if="histLoaded"
+          description="Không có dữ liệu"
+          :image-size="60"
+        />
+      </el-tab-pane>
+
+      <el-tab-pane label="Cảnh báo & Cập nhật" name="warning">
+        <div class="pm-section-grid">
+          <div class="pm-panel">
+            <div class="pm-panel-head">
+              <span class="pm-panel-title">Cảnh báo giá thấp hơn giá nhập</span>
+              <span class="pm-endpoint">GET /cost-warning</span>
+            </div>
+            <div class="pm-action-row">
+              <el-input
+                v-model.number="costWarnVariantId"
+                placeholder="Variant ID"
+                style="width: 160px"
+              />
+              <el-button
+                :loading="costWarnLoading"
+                @click="loadCostWarning"
+                type="warning"
+                plain
+                >Kiểm tra</el-button
+              >
+            </div>
+            <div v-if="costWarning" class="mt-3">
+              <el-alert
+                v-if="costWarning.belowCost"
+                :title="costWarning.message || '⚠️ Giá bán thấp hơn giá nhập!'"
+                type="warning"
+                show-icon
+                :closable="false"
+              />
+              <el-alert
+                v-else
+                title="✅ Giá bán hợp lệ (không thấp hơn giá nhập)"
+                type="success"
+                show-icon
+                :closable="false"
+              />
+              <div class="pm-result-box mt-2">
+                <div class="pm-result-grid">
+                  <div class="pm-result-item">
+                    <div class="pm-result-label">Variant ID</div>
+                    <div class="pm-result-value">
+                      {{ costWarning.variantId }}
+                    </div>
+                  </div>
+                  <div class="pm-result-item">
+                    <div class="pm-result-label">Giá bán</div>
+                    <div class="pm-result-value">
+                      {{ fmtMoney(costWarning.price) }}
+                    </div>
+                  </div>
+                  <div class="pm-result-item">
+                    <div class="pm-result-label">Giá nhập</div>
+                    <div class="pm-result-value">
+                      {{
+                        costWarning.costPrice
+                          ? fmtMoney(costWarning.costPrice)
+                          : "—"
+                      }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="pm-panel">
+            <div class="pm-panel-head">
+              <span class="pm-panel-title"
+                >Cập nhật giá khi hết khuyến mãi</span
+              >
+              <span class="pm-endpoint">PUT /api/prices/history/{id}</span>
+            </div>
+            <el-form :model="promoEndForm" label-position="top" class="pm-form">
+              <div class="pm-form-row">
+                <el-form-item label="History ID">
+                  <el-input
+                    v-model.number="promoEndForm.id"
+                    placeholder="ID bản ghi"
+                  />
+                </el-form-item>
+                <el-form-item label="Giá mới (price)">
+                  <el-input-number
+                    v-model="promoEndForm.price"
+                    :min="0"
+                    :max="999999999"
+                    class="w-100"
+                    :controls="false"
+                  />
+                </el-form-item>
+              </div>
+              <el-form-item label="Lý do (reason)">
+                <el-input v-model="promoEndForm.reason" />
+              </el-form-item>
+              <div class="pm-form-footer">
+                <el-button
+                  type="primary"
+                  :loading="promoEndLoading"
+                  @click="submitPromoEnd"
+                  >Cập nhật giá</el-button
+                >
+              </div>
+            </el-form>
+            <div v-if="promoEndResult" class="pm-result-box mt-3">
+              <div class="pm-result-grid">
+                <div class="pm-result-item">
+                  <div class="pm-result-label">ID</div>
+                  <div class="pm-result-value">{{ promoEndResult.id }}</div>
+                </div>
+                <div class="pm-result-item">
+                  <div class="pm-result-label">Giá mới</div>
+                  <div class="pm-result-value pm-result-highlight">
+                    {{ fmtMoney(promoEndResult.price) }}
+                  </div>
+                </div>
+                <div class="pm-result-item">
+                  <div class="pm-result-label">Lý do</div>
+                  <div class="pm-result-value">{{ promoEndResult.reason }}</div>
+                </div>
+                <div class="pm-result-item">
+                  <div class="pm-result-label">Người tạo</div>
+                  <div class="pm-result-value">
+                    {{ promoEndResult.createdByUsername ?? "—" }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </el-tab-pane>
+    </el-tabs>
+
+    <el-dialog
+      v-model="dlg.open"
+      title="Sửa bản ghi giá"
+      width="560px"
+      align-center
+    >
+      <el-alert
+        v-if="dlg.alert"
+        :title="dlg.alert"
+        type="error"
+        show-icon
+        :closable="false"
+        class="mb-3"
+      />
+      <el-form :model="dlg.form" label-position="top">
+        <div class="pm-form-row">
+          <el-form-item label="Currency">
+            <el-input v-model="dlg.form.currencyCode" />
+          </el-form-item>
+          <el-form-item label="Giá bán">
+            <el-input-number
+              v-model="dlg.form.price"
+              :min="0"
+              :max="999999999"
+              class="w-100"
+              :controls="false"
+            />
+          </el-form-item>
+        </div>
+        <div class="pm-form-row">
+          <el-form-item label="Giá nhập">
+            <el-input-number
+              v-model="dlg.form.costPrice"
+              :min="0"
+              :max="999999999"
+              class="w-100"
+              :controls="false"
+            />
+          </el-form-item>
+          <el-form-item label="Lý do">
+            <el-input v-model="dlg.form.reason" />
+          </el-form-item>
+        </div>
+      </el-form>
+      <template #footer>
+        <el-button @click="dlg.open = false">Hủy</el-button>
+        <el-button type="primary" :loading="dlg.loading" @click="saveEdit"
+          >Lưu</el-button
+        >
+      </template>
+    </el-dialog>
+  </div>
+</template>
+
+<script setup>
+import { reactive, ref } from "vue";
+import { pricesApi } from "../../api/prices.api";
+import { toast } from "../../ui/toast";
+import { confirmModal } from "../../ui/confirm";
+import "../../assets/styles/pricing-manager.css";
+
+const activeTab = ref("set");
+
+const setLoading = ref(false);
+const setForm = reactive({
+  variantId: null,
+  currencyCode: "VND",
+  price: 0,
+  costPrice: 0,
+  reason: "",
+});
+
+async function setPrice() {
+  if (!setForm.variantId) return toast("Vui lòng nhập Variant ID.", "warning");
+  setLoading.value = true;
+  try {
+    await pricesApi.setVariantPrice(setForm.variantId, {
+      currencyCode: setForm.currencyCode,
+      price: setForm.price,
+      costPrice: setForm.costPrice,
+      reason: setForm.reason,
+    });
+    toast("Đã lưu giá.", "success");
+  } catch {
+    toast("Lưu giá thất bại.", "error");
+  } finally {
+    setLoading.value = false;
+  }
+}
+
+const effLoading = ref(false);
+const effective = ref(null);
+async function loadEffective() {
+  if (!setForm.variantId) return toast("Vui lòng nhập Variant ID.", "warning");
+  effLoading.value = true;
+  try {
+    const res = await pricesApi.getEffective(setForm.variantId);
+    effective.value = res?.data ?? null;
+  } catch {
+    effective.value = null;
+    toast("Tải thất bại.", "error");
+  } finally {
+    effLoading.value = false;
+  }
+}
+
+const effCustLoading = ref(false);
+const effectiveForCustomer = ref(null);
+const customerIdForPrice = ref(null);
+async function loadEffectiveForCustomer() {
+  if (!setForm.variantId) return toast("Vui lòng nhập Variant ID.", "warning");
+  if (!customerIdForPrice.value)
+    return toast("Vui lòng nhập Customer ID.", "warning");
+  effCustLoading.value = true;
+  try {
+    const res = await pricesApi.getEffectiveForCustomer(
+      setForm.variantId,
+      customerIdForPrice.value,
+    );
+    effectiveForCustomer.value = res?.data ?? null;
+  } catch {
+    effectiveForCustomer.value = null;
+    toast("Tải thất bại.", "error");
+  } finally {
+    effCustLoading.value = false;
+  }
+}
+
+const prodLoading = ref(false);
+const productId = ref(null);
+const productPrices = ref([]);
+async function loadByProduct() {
+  if (!productId.value) return toast("Vui lòng nhập Product ID.", "warning");
+  prodLoading.value = true;
+  try {
+    const res = await pricesApi.listByProduct(productId.value);
+    productPrices.value = res?.data?.data ?? res?.data ?? [];
+  } catch {
+    productPrices.value = [];
+    toast("Tải thất bại.", "error");
+  } finally {
+    prodLoading.value = false;
+  }
+}
+
+const histLoading = ref(false);
+const histLoaded = ref(false);
+const histVariantId = ref(null);
+const variantHistory = ref([]);
+async function loadVariantHistory() {
+  if (!histVariantId.value)
+    return toast("Vui lòng nhập Variant ID.", "warning");
+  histLoading.value = true;
+  histLoaded.value = false;
+  try {
+    const res = await pricesApi.getVariantHistory(histVariantId.value);
+    variantHistory.value = res?.data?.data ?? res?.data ?? [];
+    histLoaded.value = true;
+  } catch {
+    variantHistory.value = [];
+    toast("Tải thất bại.", "error");
+  } finally {
+    histLoading.value = false;
+  }
+}
+
+const dlg = reactive({
+  open: false,
+  loading: false,
+  alert: "",
+  id: null,
+  form: { currencyCode: "VND", price: 0, costPrice: 0, reason: "" },
+});
+function openEdit(row) {
+  dlg.open = true;
+  dlg.alert = "";
+  dlg.id = row.id;
+  dlg.form = {
+    currencyCode: row.currencyCode || "VND",
+    price: Number(row.price || 0),
+    costPrice: Number(row.costPrice || 0),
+    reason: row.reason || "",
+  };
+}
+async function saveEdit() {
+  dlg.loading = true;
+  dlg.alert = "";
+  try {
+    await pricesApi.updateHistory(dlg.id, dlg.form);
+    toast("Đã cập nhật.", "success");
+    dlg.open = false;
+    await loadVariantHistory();
+  } catch (e) {
+    dlg.alert = e?.response?.data?.message || e?.message || "Cập nhật thất bại";
+  } finally {
+    dlg.loading = false;
+  }
+}
+async function removeHistory(row) {
+  const ok = await confirmModal(
+    `Xóa bản ghi #${row.id}?`,
+    "Xác nhận",
+    "Xóa",
+    true,
+  );
+  if (!ok) return;
+  try {
+    await pricesApi.removeHistory(row.id);
+    toast("Đã xóa.", "success");
+    await loadVariantHistory();
+  } catch {
+    toast("Xóa thất bại.", "error");
+  }
+}
+
+const costWarnLoading = ref(false);
+const costWarnVariantId = ref(null);
+const costWarning = ref(null);
+async function loadCostWarning() {
+  if (!costWarnVariantId.value)
+    return toast("Vui lòng nhập Variant ID.", "warning");
+  costWarnLoading.value = true;
+  try {
+    const res = await pricesApi.getCostWarning(costWarnVariantId.value);
+    costWarning.value = res?.data?.data ?? res?.data ?? null;
+  } catch {
+    costWarning.value = null;
+    toast("Tải thất bại.", "error");
+  } finally {
+    costWarnLoading.value = false;
+  }
+}
+
+const promoEndLoading = ref(false);
+const promoEndResult = ref(null);
+const promoEndForm = reactive({ id: null, price: 0, reason: "PROMO_ENDED" });
+async function submitPromoEnd() {
+  if (!promoEndForm.id) return toast("Vui lòng nhập History ID.", "warning");
+  promoEndLoading.value = true;
+  try {
+    const res = await pricesApi.updateHistory(promoEndForm.id, {
+      price: promoEndForm.price,
+      reason: promoEndForm.reason,
+    });
+    promoEndResult.value = res?.data?.data ?? res?.data ?? null;
+    toast("Đã cập nhật giá.", "success");
+  } catch (e) {
+    toast(e?.response?.data?.message || "Cập nhật thất bại.", "error");
+  } finally {
+    promoEndLoading.value = false;
+  }
+}
+
+function fmtMoney(val) {
+  if (val == null) return "—";
+  return Number(val).toLocaleString("vi-VN") + " ₫";
+}
+function fmtDate(iso) {
+  if (!iso) return "—";
+  try {
+    return new Date(iso).toLocaleString("vi-VN");
+  } catch {
+    return iso;
+  }
+}
+</script>
+FILE: src/pages/system/PromotionManager.vue
+<template>
+  <div class="promo-wrap">
+    <div class="promo-header">
+      <div>
+        <div class="promo-kicker">Admin · Promotions</div>
+        <div class="promo-title">Quản lý khuyến mãi</div>
+      </div>
+      <div class="promo-header-actions">
+        <el-switch
+          v-model="activeOnly"
+          active-text="Active only"
+          @change="load"
+        />
+        <el-button @click="load" :loading="loading" plain>Reload</el-button>
+        <el-button @click="loadConflicts" :loading="conflictLoading" plain
+          >⚠️ Conflicts</el-button
+        >
+        <el-button @click="loadExpiring" :loading="expiringLoading" plain>
+          ⏰ Sắp hết hạn
+        </el-button>
+        <el-button @click="loadReport" :loading="reportLoading" plain>
+          📊 Báo cáo
+        </el-button>
+        <el-button type="primary" @click="openCreate">+ Tạo mới</el-button>
+      </div>
+    </div>
+
+    <transition name="slide-down">
+      <div v-if="conflicts !== null" class="promo-conflicts">
+        <el-alert
+          v-if="conflicts.length === 0"
+          title="Không có xung đột khuyến mãi"
+          type="success"
+          show-icon
+          :closable="true"
+          @close="conflicts = null"
+        />
+        <template v-else>
+          <div class="promo-section-label">
+            ⚠️ Xung đột khuyến mãi
+            <el-tag type="danger" size="small" round>{{
+              conflicts.length
+            }}</el-tag>
+            <el-button
+              text
+              size="small"
+              @click="conflicts = null"
+              style="margin-left: auto"
+              >Ẩn</el-button
+            >
+          </div>
+          <el-table :data="conflicts" border size="small" class="promo-table">
+            <el-table-column prop="id" label="ID" width="80" />
+            <el-table-column prop="code" label="Code" width="140" />
+            <el-table-column prop="name" label="Name" min-width="200" />
+            <el-table-column
+              prop="conflictReason"
+              label="Lý do xung đột"
+              min-width="200"
+            />
+          </el-table>
+        </template>
+      </div>
+    </transition>
+
+    <div class="promo-card">
+      <el-table :data="rows" border :loading="loading" class="promo-table">
+        <el-table-column prop="id" label="ID" width="75" />
+        <el-table-column prop="code" label="Code" width="140">
+          <template #default="{ row }">
+            <span class="promo-code">{{ row.code }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="name" label="Tên chiến dịch" min-width="200" />
+        <el-table-column label="Giảm giá" width="120">
+          <template #default="{ row }">
+            <span class="promo-discount">
+              {{ row.discountValue
+              }}{{ row.discountType === "PERCENT" ? "%" : " ₫" }}
+            </span>
+            <div class="promo-type-badge">{{ row.discountType }}</div>
+          </template>
+        </el-table-column>
+        <el-table-column
+          prop="priority"
+          label="Ưu tiên"
+          width="85"
+          align="center"
+        />
+        <el-table-column label="Thời gian" width="230">
+          <template #default="{ row }">
+            <div class="promo-date-range">
+              <span>{{ fmtDate(row.startDate) }}</span>
+              <span class="promo-date-sep">→</span>
+              <span>{{ fmtDate(row.endDate) }}</span>
+            </div>
+          </template>
+        </el-table-column>
+        <el-table-column
+          prop="isActive"
+          label="Trạng thái"
+          width="110"
+          align="center"
+        >
+          <template #default="{ row }">
+            <el-tag
+              :type="row.isActive ? 'success' : 'info'"
+              effect="light"
+              size="small"
+            >
+              {{ row.isActive ? "Đang chạy" : "Tắt" }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="Thao tác" width="200" fixed="right">
+          <template #default="{ row }">
+            <el-button size="small" @click="openEdit(row)">Sửa</el-button>
+            <el-button
+              size="small"
+              type="primary"
+              plain
+              @click="openPreview(row)"
+              >Preview</el-button
+            >
+            <el-button size="small" type="danger" plain @click="remove(row)"
+              >Xóa</el-button
+            >
+          </template>
+        </el-table-column>
+      </el-table>
+    </div>
+
+    <transition name="slide-down">
+      <div v-if="previewPromo" class="promo-card mt-3">
+        <div class="promo-preview-head">
+          <div>
+            <div class="promo-section-label" style="margin-bottom: 2px">
+              Xem giá chiến dịch:
+              <el-tag type="warning" size="small">{{
+                previewPromo.code
+              }}</el-tag>
+            </div>
+            <div class="promo-endpoint">
+              GET /api/prices/products/{productId}
+            </div>
+          </div>
+          <div class="promo-preview-inputs">
+            <el-input
+              v-model.number="previewProductId"
+              placeholder="Product ID"
+              style="width: 130px"
+            />
+            <el-input
+              v-model.number="previewCustomerId"
+              placeholder="Customer ID (tùy chọn)"
+              style="width: 180px"
+            />
+            <el-button
+              type="primary"
+              :loading="previewLoading"
+              @click="loadPreviewPrices"
+              >Tải giá</el-button
+            >
+            <el-button
+              @click="
+                previewPromo = null;
+                previewPrices = [];
+              "
+              plain
+              >Đóng</el-button
+            >
+          </div>
+        </div>
+        <el-table
+          v-if="previewPrices.length"
+          :data="previewPrices"
+          border
+          class="promo-table mt-3"
+          size="small"
+        >
+          <el-table-column prop="variantId" label="Variant ID" width="90" />
+          <el-table-column
+            prop="variantName"
+            label="Tên variant"
+            min-width="160"
+          />
+          <el-table-column prop="sku" label="SKU" width="150" />
+          <el-table-column prop="currencyCode" label="Currency" width="90" />
+          <el-table-column label="Giá gốc" width="130">
+            <template #default="{ row }">{{ fmtMoney(row.price) }}</template>
+          </el-table-column>
+          <el-table-column label="Giá sau KM" width="140">
+            <template #default="{ row }">
+              <span
+                :class="
+                  row.finalPrice < row.price ? 'promo-price-discount' : ''
+                "
+              >
+                {{ fmtMoney(row.finalPrice) }}
+              </span>
+            </template>
+          </el-table-column>
+          <el-table-column label="Mã KM áp dụng" width="140">
+            <template #default="{ row }">
+              <el-tag v-if="row.promotionCode" type="warning" size="small">{{
+                row.promotionCode
+              }}</el-tag>
+              <span v-else class="promo-muted">—</span>
+            </template>
+          </el-table-column>
+        </el-table>
+        <el-empty
+          v-else-if="previewLoaded"
+          description="Không có dữ liệu"
+          :image-size="60"
+        />
+      </div>
+    </transition>
+
+    <transition name="slide-down">
+      <div v-if="expiringRows !== null" class="promo-conflicts">
+        <div class="promo-section-label">
+          ⏰ Khuyến mãi sắp hết hạn (trong 3 ngày)
+          <el-tag
+            :type="expiringRows.length ? 'warning' : 'success'"
+            size="small"
+            round
+          >
+            {{ expiringRows.length }}
+          </el-tag>
+          <el-button
+            text
+            size="small"
+            @click="expiringRows = null"
+            style="margin-left: auto"
+            >Ẩn</el-button
+          >
+        </div>
+        <el-alert
+          v-if="expiringRows.length === 0"
+          title="Không có khuyến mãi nào sắp hết hạn"
+          type="success"
+          show-icon
+          :closable="false"
+        />
+        <el-table
+          v-else
+          :data="expiringRows"
+          border
+          size="small"
+          class="promo-table"
+        >
+          <el-table-column prop="id" label="ID" width="75" />
+          <el-table-column prop="code" label="Code" width="140">
+            <template #default="{ row }"
+              ><span class="promo-code">{{ row.code }}</span></template
+            >
+          </el-table-column>
+          <el-table-column prop="name" label="Tên" min-width="200" />
+          <el-table-column label="Hết hạn" width="170">
+            <template #default="{ row }">
+              <el-tag type="warning" size="small">{{
+                fmtDate(row.endDate)
+              }}</el-tag>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+    </transition>
+
+    <transition name="slide-down">
+      <div v-if="reportData !== null" class="promo-card mt-3">
+        <div class="promo-section-label">
+          📊 Báo cáo khuyến mãi
+          <el-select
+            v-model="reportPeriod"
+            size="small"
+            @change="loadReport"
+            style="width: 100px; margin-left: 8px"
+          >
+            <el-option label="Tuần" value="week" />
+            <el-option label="Tháng" value="month" />
+          </el-select>
+          <el-button
+            text
+            size="small"
+            @click="reportData = null"
+            style="margin-left: auto"
+            >Ẩn</el-button
+          >
+        </div>
+        <div class="promo-report-grid mt-2">
+          <div class="promo-stat-card">
+            <div class="promo-stat-value">{{ reportData.total ?? 0 }}</div>
+            <div class="promo-stat-label">Tổng KM</div>
+          </div>
+          <div class="promo-stat-card">
+            <div class="promo-stat-value text-success">
+              {{ reportData.activeCount ?? 0 }}
+            </div>
+            <div class="promo-stat-label">Đang chạy</div>
+          </div>
+          <div class="promo-stat-card">
+            <div class="promo-stat-value text-warning">
+              {{ reportData.comboCount ?? 0 }}
+            </div>
+            <div class="promo-stat-label">Combo</div>
+          </div>
+          <div class="promo-stat-card">
+            <div class="promo-stat-value text-danger">
+              {{ reportData.totalRedemptions ?? 0 }}
+            </div>
+            <div class="promo-stat-label">Lượt dùng</div>
+          </div>
+        </div>
+      </div>
+    </transition>
+
+    <el-dialog
+      v-model="dlg.open"
+      :title="dlg.mode === 'create' ? '+ Tạo khuyến mãi' : 'Sửa khuyến mãi'"
+      width="860px"
+      align-center
+    >
+      <el-alert
+        v-if="dlg.alert"
+        :title="dlg.alert"
+        type="error"
+        show-icon
+        :closable="false"
+        class="mb-3"
+      />
+
+      <el-form :model="dlg.form" label-position="top">
+        <div class="dlg-grid-4">
+          <el-form-item label="Code" style="grid-column: span 1">
+            <el-input v-model="dlg.form.code" :disabled="dlg.mode === 'edit'" />
+          </el-form-item>
+          <el-form-item label="Tên chiến dịch" style="grid-column: span 3">
+            <el-input v-model="dlg.form.name" />
+          </el-form-item>
+        </div>
+
+        <el-form-item label="Mô tả">
+          <el-input v-model="dlg.form.description" type="textarea" :rows="2" />
+        </el-form-item>
+
+        <div class="dlg-grid-3">
+          <el-form-item label="Loại giảm giá">
+            <el-select v-model="dlg.form.discountType" class="w-100">
+              <el-option label="PERCENT (%)" value="PERCENT" />
+              <el-option label="FIXED (₫)" value="FIXED" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="Giá trị giảm">
+            <el-input-number
+              v-model="dlg.form.discountValue"
+              :min="0"
+              :max="999999999"
+              class="w-100"
+              :controls="false"
+            />
+          </el-form-item>
+          <el-form-item label="Ưu tiên (priority)">
+            <el-input-number
+              v-model="dlg.form.priority"
+              :min="0"
+              :max="9999"
+              class="w-100"
+              :controls="false"
+            />
+          </el-form-item>
+        </div>
+
+        <div class="dlg-grid-2">
+          <el-form-item label="Ngày bắt đầu">
+            <el-date-picker
+              v-model="dlg.form.startDate"
+              type="datetime"
+              value-format="YYYY-MM-DDTHH:mm:ss"
+              class="w-100"
+            />
+          </el-form-item>
+          <el-form-item label="Ngày kết thúc">
+            <el-date-picker
+              v-model="dlg.form.endDate"
+              type="datetime"
+              value-format="YYYY-MM-DDTHH:mm:ss"
+              class="w-100"
+            />
+          </el-form-item>
+        </div>
+
+        <div class="dlg-grid-3">
+          <el-form-item label="Phạm vi (scope)">
+            <el-select v-model="dlg.form.scope" class="w-100">
+              <el-option label="ALL — Tất cả" value="ALL" />
+              <el-option label="PRODUCT — Theo sản phẩm" value="PRODUCT" />
+              <el-option label="VARIANT — Theo biến thể" value="VARIANT" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="Stackable (cộng dồn)">
+            <el-switch v-model="dlg.form.stackable" />
+          </el-form-item>
+          <el-form-item label="Kích hoạt">
+            <el-switch v-model="dlg.form.isActive" />
+          </el-form-item>
+        </div>
+
+        <div class="dlg-grid-2">
+          <el-form-item label="Product IDs (cách nhau bởi dấu phẩy)">
+            <el-input v-model="dlg.form.productIdsText" placeholder="1,2,3" />
+          </el-form-item>
+          <el-form-item label="Variant IDs (cách nhau bởi dấu phẩy)">
+            <el-input
+              v-model="dlg.form.variantIdsText"
+              placeholder="10,11,12"
+            />
+          </el-form-item>
+        </div>
+      </el-form>
+
+      <template #footer>
+        <el-button @click="dlg.open = false">Hủy</el-button>
+        <el-button type="primary" :loading="dlg.loading" @click="save">
+          {{ dlg.mode === "create" ? "Tạo mới" : "Lưu thay đổi" }}
+        </el-button>
+      </template>
+    </el-dialog>
+  </div>
+</template>
+
+<script setup>
+import { onMounted, reactive, ref } from "vue";
+import { promotionsApi } from "../../api/promotions.api";
+import { pricesApi } from "../../api/prices.api";
+import { toast } from "../../ui/toast";
+import { confirmModal } from "../../ui/confirm";
+import "../../assets/styles/promotion-manager.css";
+
+const loading = ref(false);
+const activeOnly = ref(false);
+const rows = ref([]);
+
+function extractList(payload) {
+  if (!payload) return [];
+  if (Array.isArray(payload)) return payload;
+  const root = payload?.data ?? payload;
+  if (Array.isArray(root)) return root;
+  for (const k of ["content", "items", "results", "rows", "list"]) {
+    if (Array.isArray(root?.[k])) return root[k];
+    if (Array.isArray(root?.data?.[k])) return root.data[k];
+  }
+  return [];
+}
+
+function normalize(list) {
+  return (list || []).map((p) => ({
+    id: p?.id ?? p?.promotionId,
+    code: p?.code ?? "",
+    name: p?.name ?? "",
+    description: p?.description ?? "",
+    discountType: p?.discountType ?? "",
+    discountValue: p?.discountValue ?? 0,
+    startDate: p?.startDate ?? "",
+    endDate: p?.endDate ?? "",
+    scope: parseScope(p?.applicabilityJson) ?? p?.scope ?? "ALL",
+    productIds:
+      parseApplicability(p?.applicabilityJson, "product_ids") ??
+      p?.productIds ??
+      [],
+    variantIds:
+      parseApplicability(p?.applicabilityJson, "variant_ids") ??
+      p?.variantIds ??
+      [],
+    priority: p?.priority ?? 0,
+    stackable: !!p?.stackable,
+    isActive: !!p?.isActive,
+    raw: p,
+  }));
+}
+
+function parseScope(json) {
+  try {
+    return JSON.parse(json)?.scope ?? null;
+  } catch {
+    return null;
+  }
+}
+function parseApplicability(json, key) {
+  try {
+    return JSON.parse(json)?.[key] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function load() {
+  loading.value = true;
+  try {
+    const res = await promotionsApi.list(activeOnly.value);
+    rows.value = normalize(extractList(res?.data));
+  } catch {
+    rows.value = [];
+    toast("Tải thất bại.", "error");
+  } finally {
+    loading.value = false;
+  }
+}
+
+const conflictLoading = ref(false);
+const conflicts = ref(null);
+async function loadConflicts() {
+  conflictLoading.value = true;
+  try {
+    const res = await promotionsApi.getConflicts();
+    conflicts.value = res?.data?.data ?? res?.data ?? [];
+  } catch {
+    toast("Tải conflicts thất bại.", "error");
+  } finally {
+    conflictLoading.value = false;
+  }
+}
+
+const previewPromo = ref(null);
+const previewProductId = ref(null);
+const previewCustomerId = ref(null);
+const previewLoading = ref(false);
+const previewPrices = ref([]);
+const previewLoaded = ref(false);
+
+function openPreview(row) {
+  previewPromo.value = row;
+  previewPrices.value = [];
+  previewLoaded.value = false;
+  previewProductId.value = null;
+  previewCustomerId.value = null;
+}
+
+async function loadPreviewPrices() {
+  if (!previewProductId.value)
+    return toast("Vui lòng nhập Product ID.", "warning");
+  previewLoading.value = true;
+  previewLoaded.value = false;
+  try {
+    let res;
+    if (previewCustomerId.value) {
+      res = await pricesApi.listByProductForCustomer(
+        previewProductId.value,
+        previewCustomerId.value,
+      );
+    } else {
+      res = await pricesApi.listByProduct(previewProductId.value);
+    }
+    previewPrices.value = res?.data?.data ?? res?.data ?? [];
+    previewLoaded.value = true;
+  } catch {
+    previewPrices.value = [];
+    toast("Tải giá thất bại.", "error");
+  } finally {
+    previewLoading.value = false;
+  }
+}
+
+const dlg = reactive({
+  open: false,
+  mode: "create",
+  loading: false,
+  alert: "",
+  id: null,
+  form: {
+    code: "",
+    name: "",
+    description: "",
+    discountType: "PERCENT",
+    discountValue: 0,
+    startDate: "",
+    endDate: "",
+    scope: "ALL",
+    productIdsText: "",
+    variantIdsText: "",
+    priority: 0,
+    stackable: false,
+    isActive: true,
+  },
+});
+
+function parseIds(text) {
+  return String(text || "")
+    .split(",")
+    .map((x) => x.trim())
+    .filter(Boolean)
+    .map((x) => Number(x))
+    .filter((n) => Number.isFinite(n));
+}
+
+function openCreate() {
+  dlg.open = true;
+  dlg.mode = "create";
+  dlg.alert = "";
+  dlg.id = null;
+  dlg.form = {
+    code: "",
+    name: "",
+    description: "",
+    discountType: "PERCENT",
+    discountValue: 0,
+    startDate: "",
+    endDate: "",
+    scope: "ALL",
+    productIdsText: "",
+    variantIdsText: "",
+    priority: 0,
+    stackable: false,
+    isActive: true,
+  };
+}
+
+function openEdit(row) {
+  dlg.open = true;
+  dlg.mode = "edit";
+  dlg.alert = "";
+  dlg.id = row.id;
+  dlg.form = {
+    code: row.code,
+    name: row.name,
+    description: row.description,
+    discountType: row.discountType || "PERCENT",
+    discountValue: Number(row.discountValue || 0),
+    startDate: row.startDate || "",
+    endDate: row.endDate || "",
+    scope: row.scope || "ALL",
+    productIdsText: (row.productIds || []).join(","),
+    variantIdsText: (row.variantIds || []).join(","),
+    priority: Number(row.priority || 0),
+    stackable: !!row.stackable,
+    isActive: !!row.isActive,
+  };
+}
+
+async function save() {
+  dlg.alert = "";
+  if (!dlg.form.code || !dlg.form.name) {
+    dlg.alert = "Code và tên là bắt buộc.";
+    return;
+  }
+  const payload = {
+    code: dlg.form.code,
+    name: dlg.form.name,
+    description: dlg.form.description,
+    discountType: dlg.form.discountType,
+    discountValue: dlg.form.discountValue,
+    startDate: dlg.form.startDate,
+    endDate: dlg.form.endDate,
+    scope: dlg.form.scope,
+    productIds: parseIds(dlg.form.productIdsText),
+    variantIds: parseIds(dlg.form.variantIdsText),
+    priority: dlg.form.priority,
+    stackable: dlg.form.stackable,
+    isActive: dlg.form.isActive,
+  };
+  dlg.loading = true;
+  try {
+    if (dlg.mode === "create") {
+      await promotionsApi.create(payload);
+      toast("Đã tạo khuyến mãi.", "success");
+    } else {
+      await promotionsApi.update(dlg.id, payload);
+      toast("Đã cập nhật.", "success");
+    }
+    dlg.open = false;
+    await load();
+  } catch (e) {
+    dlg.alert = e?.response?.data?.message || e?.message || "Lưu thất bại";
+  } finally {
+    dlg.loading = false;
+  }
+}
+
+async function remove(row) {
+  const ok = await confirmModal(
+    `Xóa khuyến mãi #${row.id} (${row.code})?`,
+    "Xác nhận",
+    "Xóa",
+    true,
+  );
+  if (!ok) return;
+  try {
+    await promotionsApi.remove(row.id);
+    toast("Đã xóa.", "success");
+    await load();
+  } catch {
+    toast("Xóa thất bại.", "error");
+  }
+}
+
+function fmtDate(iso) {
+  if (!iso) return "—";
+  try {
+    return new Date(iso).toLocaleDateString("vi-VN");
+  } catch {
+    return iso;
+  }
+}
+function fmtMoney(val) {
+  if (val == null) return "—";
+  return Number(val).toLocaleString("vi-VN") + " ₫";
+}
+
+const expiringLoading = ref(false);
+const expiringRows = ref(null);
+async function loadExpiring() {
+  expiringLoading.value = true;
+  try {
+    const res = await promotionsApi.getExpiring(3);
+    expiringRows.value = res?.data?.data ?? res?.data ?? [];
+  } catch {
+    toast("Tải danh sách sắp hết hạn thất bại.", "error");
+  } finally {
+    expiringLoading.value = false;
+  }
+}
+
+const reportLoading = ref(false);
+const reportData = ref(null);
+const reportPeriod = ref("month");
+async function loadReport() {
+  reportLoading.value = true;
+  try {
+    const res = await promotionsApi.getReport(reportPeriod.value);
+    reportData.value = res?.data?.data ?? res?.data ?? {};
+  } catch {
+    toast("Tải báo cáo thất bại.", "error");
+  } finally {
+    reportLoading.value = false;
+  }
+}
+
+onMounted(load);
+</script>
+FILE: src/pages/system/SystemShell.vue
+<template>
+  <el-container class="sys">
+    <el-aside width="260px" class="aside">
+      <div class="brand" @click="go('/system/dashboard')">
+        <div class="brand-name">Tech Store</div>
+        <div class="brand-sub">System Portal</div>
+      </div>
+
+      <div class="pill">
+        <div class="pill-k">Signed in as</div>
+        <div class="pill-v text-truncate">{{ auth.displayName }}</div>
+        <el-tag class="mt-2" type="success" effect="light">{{
+          (auth.role || "SYSTEM").toUpperCase()
+        }}</el-tag>
+      </div>
+
+      <el-menu :default-active="activePath" class="menu" router>
+        <el-menu-item index="/system/dashboard">Dashboard</el-menu-item>
+
+        <el-sub-menu index="mgmt">
+          <template #title>Management</template>
+          <el-menu-item index="/system/users">Users</el-menu-item>
+          <el-menu-item index="/system/customers">Customers</el-menu-item>
+          <el-menu-item index="/system/Toployalcustomers"
+            >Toployal customers</el-menu-item
+          >
+          <el-menu-item index="/system/inactive-customers"
+            >Inactive-Customers</el-menu-item
+          >
+          <el-menu-item index="/system/Zeroordercustomers"
+            >Zero Order-Customers</el-menu-item
+          >
+          <el-menu-item index="/system/Loyaltysummaryadmin"
+            >Loyalty Summary - Admin
+          </el-menu-item>
+          <el-menu-item index="/system/customer-spending"
+            >Customers - Spending</el-menu-item
+          >
+          <el-menu-item index="/system/birthday">Birthday Manager</el-menu-item>
+          <el-menu-item index="/system/categories">Categories</el-menu-item>
+          <el-menu-item index="/system/products">Products</el-menu-item>
+        </el-sub-menu>
+
+        <el-sub-menu index="orders">
+          <template #title>Orders</template>
+          <el-menu-item index="/system/orders/new">New</el-menu-item>
+          <el-menu-item index="/system/orders/processing"
+            >Processing</el-menu-item
+          >
+          <el-menu-item index="/system/orders/paid"> Paid </el-menu-item>
+          <el-menu-item index="/system/orders/delivered">
+            Delivered
+          </el-menu-item>
+          <el-menu-item index="/system/orders/shipping">Shipping</el-menu-item>
+          <el-menu-item index="/system/orders/filter">
+            Order Filter
+          </el-menu-item>
+        </el-sub-menu>
+
+        <el-sub-menu index="returns">
+          <template #title>Returns</template>
+          <el-menu-item index="/system/returns/pending"> Pending </el-menu-item>
+          <el-menu-item index="/system/returns/all"> All Returns </el-menu-item>
+        </el-sub-menu>
+
+        <el-menu-item index="/system/reports">
+          <span>Reports</span>
+        </el-menu-item>
+
+        <el-menu-item index="/system/pricing">Pricing</el-menu-item>
+        <el-menu-item index="/system/payments">Payment</el-menu-item>
+        <el-menu-item index="/system/promotions">Promotions</el-menu-item>
+        <el-sub-menu index="audits">
+          <template #title>Audit</template>
+          <el-menu-item index="/system/audit-logs">Audit Logs</el-menu-item>
+          <el-menu-item index="/system/audit-report">Audit Report</el-menu-item>
+          <el-menu-item index="/system/security-logs"
+            >Security Logs</el-menu-item
+          >
+        </el-sub-menu>
+
+        <el-sub-menu index="settings">
+          <template #title>Settings</template>
+          <el-menu-item index="/system/settings/currency"
+            >Currency</el-menu-item
+          >
+        </el-sub-menu>
+      </el-menu>
+
+      <div class="aside-foot">
+        <el-button type="danger" plain class="w-100" @click="logout"
+          >Logout</el-button
+        >
+      </div>
+    </el-aside>
+
+    <el-container>
+      <el-header class="topbar">
+        <div class="d-flex align-items-center justify-content-between w-100">
+          <div class="page-title">{{ pageTitle }}</div>
+          <div class="d-flex align-items-center gap-2">
+            <el-button @click="go('/')" plain>Go to Customer</el-button>
+          </div>
+        </div>
+      </el-header>
+
+      <el-main class="main">
+        <router-view />
+      </el-main>
+    </el-container>
+  </el-container>
+</template>
+
+<script setup>
+import { computed } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { confirmModal } from "../../ui/confirm";
+import { toast } from "../../ui/toast";
+import {
+  clearLastAuthResponse,
+  clearSession,
+  useAuthStore,
+} from "../../stores/auth";
+import "../../assets/styles/system-layout.css";
+
+const route = useRoute();
+const router = useRouter();
+const auth = useAuthStore();
+
+const activePath = computed(() => route.path);
+const pageTitle = computed(() => route.meta?.title || "System");
+
+function go(path) {
+  if (path && path !== route.path) router.push(path);
+}
+
+async function logout() {
+  const ok = await confirmModal(
+    "Do you want to log out?",
+    "Confirm",
+    "Log out",
+    true,
+  );
+  if (!ok) return;
+
+  clearSession();
+  clearLastAuthResponse();
+  toast("Logged out.", "success");
+  router.push("/system/login");
+}
+</script>
+FILE: src/router/index.js
+import { createRouter, createWebHistory } from "vue-router";
+import { getRole, getToken } from "../stores/auth";
+
+// ===== Customer =====
+import CustomerHome from "../pages/customer/CustomerHome.vue";
+import CustomerLogin from "../pages/customer/CustomerLogin.vue";
+import CustomerRegister from "../pages/customer/CustomerRegister.vue";
+import CustomerOrderCreate from "../pages/customer/OrderCreate.vue";
+import CustomerOrderDetail from "../pages/customer/OrderDetail.vue";
+import CustomerProfile from "../pages/customer/CustomerProfile.vue";
+import CartPage from "../pages/customer/CartPage.vue";
+import CustomerOrders from "../pages/customer/CustomerOrders.vue";
+import PaymentSuccess from "../pages/customer/PaymentSuccess.vue";
+import Spinwheel from "../pages/customer/Spinwheel.vue";
+
+// ===== System (Admin) =====
+import SystemLogin from "../pages/system/SystemLogin.vue";
+import SystemShell from "../pages/system/SystemShell.vue";
+import SystemDashboard from "../pages/system/SystemDashboard.vue";
+import UserManager from "../pages/system/UserManager.vue";
+import CustomerManager from "../pages/system/CustomerManager.vue";
+import CategoryManager from "../pages/system/CategoryManager.vue";
+import ProductManager from "../pages/system/ProductManager.vue";
+import OrderListNew from "../pages/system/OrderListNew.vue";
+import OrderListProcessing from "../pages/system/OrderListProcessing.vue";
+import OrderListPaid from "../pages/system/OrderListPaid.vue";
+import OrderListDelivered from "../pages/system/OrderListDelivered.vue";
+import OrderListShipping from "../pages/system/OrderListShipping.vue";
+import ReturnListPending from "../pages/system/ReturnListPending.vue";
+import ReturnListAll from "../pages/system/ReturnListAll.vue";
+import OrderFilter from "../pages/system/OrderFilter.vue";
+import SystemOrderDetail from "../pages/system/OrderDetail.vue";
+import PricingManager from "../pages/system/PricingManager.vue";
+import PromotionManager from "../pages/system/PromotionManager.vue";
+import SettingsCurrency from "../pages/system/SettingsCurrency.vue";
+import PaymentManagement from "../pages/system/PaymentManagement.vue";
+import Birthday from "../pages/system/BirthdayManager.vue";
+import Customerspendinganalytics from "../pages/system/Customerspendinganalytics.vue";
+import InactiveCustomers from "../pages/system/InactiveCustomers.vue";
+import Toployalcustomers from "../pages/system/Toployalcustomers.vue";
+import Zeroordercustomers from "../pages/system/Zeroordercustomers.vue";
+import Loyaltysummaryadmin from "../pages/system/Loyaltysummaryadmin.vue";
+import ReportDashboard from "../pages/system/ReportDashboard.vue";
+
+// ===== Audit =====
+import AuditLog from "../pages/audit/AuditLog.vue";
+import AuditReportDashboard from "../pages/audit/AuditReportDashboard.vue";
+import SecurityLog from "../pages/audit/SecurityLog.vue";
+
+// ===== Inventory =====
+import InventoryShell from "../pages/inventory/InventoryShell.vue";
+import InventoryOrderDetail from "../pages/inventory/InventoryOrderDetail.vue";
+import InventoryOrdersPaid from "../pages/inventory/InventoryOrdersPaid.vue";
+import InventoryOrdersProcessing from "../pages/inventory/InventoryOrdersProcessing.vue";
+
+const routes = [
+  // ===== CUSTOMER =====
+  {
+    path: "/",
+    name: "home",
+    component: CustomerHome,
+    meta: { portal: "customer" },
+  },
+  {
+    path: "/login",
+    name: "login",
+    component: CustomerLogin,
+    meta: { portal: "customer", hideHeader: true },
+  },
+  {
+    path: "/register",
+    name: "register",
+    component: CustomerRegister,
+    meta: { portal: "customer", hideHeader: true },
+  },
+  {
+    path: "/profile",
+    name: "customer-profile",
+    component: CustomerProfile,
+    meta: { portal: "customer", requiresAuth: true },
+  },
+  {
+    path: "/Spin-wheel",
+    name: "Spin-Wheel",
+    component: Spinwheel,
+    meta: { portal: "customer", requiresAuth: true },
+  },
+  {
+    path: "/orders/new",
+    name: "customer-order-create",
+    component: CustomerOrderCreate,
+    meta: { portal: "customer", requiresAuth: true },
+  },
+  {
+    path: "/orders/:orderId",
+    name: "customer-order-detail",
+    component: CustomerOrderDetail,
+    meta: { portal: "customer", requiresAuth: true },
+  },
+  {
+    path: "/payment/success/:paymentId",
+    name: "payment-success",
+    component: PaymentSuccess,
+    meta: { portal: "customer", requiresAuth: true },
+  },
+  {
+    path: "/cart",
+    name: "cart",
+    component: CartPage,
+    meta: { portal: "customer", requiresAuth: true },
+  },
+  {
+    path: "/my-orders",
+    name: "my orders",
+    component: CustomerOrders,
+    meta: { portal: "customer", requiresAuth: true },
+  },
+
+  // ===== SYSTEM LOGIN =====
+  {
+    path: "/system/login",
+    name: "system-login",
+    component: SystemLogin,
+    meta: { portal: "system", hideHeader: true },
+  },
+
+  // ===== SYSTEM AREA =====
+  {
+    path: "/system",
+    component: SystemShell,
+    meta: { portal: "system", requiresAuth: true },
+    children: [
+      { path: "", redirect: "/system/dashboard" },
+
+      {
+        path: "dashboard",
+        name: "system-dashboard",
+        component: SystemDashboard,
+        meta: { title: "Dashboard" },
+      },
+
+      {
+        path: "users",
+        name: "system-users",
+        component: UserManager,
+        meta: { title: "User Management" },
+      },
+      {
+        path: "customer-spending",
+        name: "system-customers-spend",
+        component: Customerspendinganalytics,
+        meta: { title: "Customers & Loyalty" },
+      },
+      {
+        path: "customers",
+        name: "system-customers",
+        component: CustomerManager,
+        meta: { title: "Customers & Loyalty" },
+      },
+      {
+        path: "Toployalcustomers",
+        name: "Toployal customers",
+        component: Toployalcustomers,
+        meta: { title: "Top loyal customers" },
+      },
+      {
+        path: "Zeroordercustomers",
+        name: "Customers with zero order",
+        component: Zeroordercustomers,
+        meta: { title: "Zero order customers" },
+      },
+      {
+        path: "inactive-customers",
+        name: "system-customers-inactive",
+        component: InactiveCustomers,
+        meta: { title: "Inactive Customers" },
+      },
+
+      {
+        path: "categories",
+        name: "system-categories",
+        component: CategoryManager,
+        meta: { title: "Categories" },
+      },
+      {
+        path: "products",
+        name: "system-products",
+        component: ProductManager,
+        meta: { title: "Products" },
+      },
+
+      // ===== Orders =====
+      {
+        path: "orders/new",
+        name: "system-orders-new",
+        component: OrderListNew,
+        meta: { title: "Orders (New)" },
+      },
+      {
+        path: "orders/processing",
+        name: "system-orders-processing",
+        component: OrderListProcessing,
+        meta: { title: "Orders (Processing)" },
+      },
+      {
+        path: "orders/paid",
+        name: "system-orders-paid",
+        component: OrderListPaid,
+        meta: { title: "Orders (Paid)" },
+      },
+      {
+        path: "orders/delivered",
+        name: "system-orders-delivered",
+        component: OrderListDelivered,
+        meta: { title: "Orders (Delivered)" },
+      },
+      {
+        path: "orders/shipping",
+        name: "system-orders-shipping",
+        component: OrderListShipping,
+        meta: { title: "Orders (Shipping)" },
+      },
+      {
+        path: "orders/:orderId",
+        name: "system-order-detail",
+        component: SystemOrderDetail,
+        meta: { title: "Order Detail" },
+      },
+
+      {
+        path: "returns/pending",
+        name: "system-returns-pending",
+        component: ReturnListPending,
+        meta: { title: "Returns (Pending)" },
+      },
+      {
+        path: "returns/all",
+        name: "system-returns-all",
+        component: ReturnListAll,
+        meta: { title: "All Returns" },
+      },
+
+      {
+        path: "orders/filter",
+        name: "order-filter",
+        component: OrderFilter,
+        meta: { title: "Order Filter" },
+      },
+
+      // ===== Pricing / Promotion =====
+      {
+        path: "pricing",
+        name: "system-pricing",
+        component: PricingManager,
+        meta: { title: "Pricing" },
+      },
+      {
+        path: "promotions",
+        name: "system-promotions",
+        component: PromotionManager,
+        meta: { title: "Promotions" },
+      },
+
+      {
+        path: "settings/currency",
+        name: "system-settings-currency",
+        component: SettingsCurrency,
+        meta: { title: "Settings - Currency" },
+      },
+
+      {
+        path: "payments",
+        name: "system-payments",
+        component: PaymentManagement,
+        meta: { title: "Payment History" },
+      },
+
+      {
+        path: "birthday",
+        name: "Birthday Manager",
+        component: Birthday,
+        meta: { title: "Settings - Birthday Manager" },
+      },
+
+      {
+        path: "Loyaltysummaryadmin",
+        name: "Loyalty summary admin",
+        component: Loyaltysummaryadmin,
+        meta: { title: "ADMIN - LOYALTY SUMMARY" },
+      },
+
+      // ===== Audit =====
+      {
+        path: "audit-logs",
+        name: "system-audit-logs",
+        component: AuditLog,
+        meta: { title: "Audit Logs" },
+      },
+      {
+        path: "audit-report",
+        name: "system-audit-report",
+        component: AuditReportDashboard,
+        meta: { title: "Audit Report Dashboard" },
+      },
+      {
+        path: "reports",
+        name: "reports",
+        component: ReportDashboard,
+        meta: { title: "Report Dashboard" },
+      },
+      {
+        path: "security-logs",
+        name: "system-security-logs",
+        component: SecurityLog,
+        meta: { title: "Security logs" },
+      },
+    ],
+  },
+
+  // ===== INVENTORY =====
+  {
+    path: "/inventory",
+    component: InventoryShell,
+    meta: { portal: "inventory", requiresAuth: true },
+    children: [
+      {
+        path: "orders/paid",
+        name: "Inventory Orders Paid",
+        component: InventoryOrdersPaid,
+        meta: { title: "Inventory Orders Paid" },
+      },
+      {
+        path: "orders/processing",
+        name: "Inventory Orders Processing",
+        component: InventoryOrdersProcessing,
+        meta: { title: "Inventory Orders Processing" },
+      },
+      {
+        path: "orders/:orderId",
+        name: "Inventory Order Details",
+        component: InventoryOrderDetail,
+        meta: { title: "Inventory Order Details" },
+      },
+    ],
+  },
+
+  { path: "/:pathMatch(.*)*", redirect: "/" },
+];
+
+const router = createRouter({
+  history: createWebHistory(),
+  routes,
+});
+
+router.beforeEach((to) => {
+  const token = getToken();
+  const role = (getRole() || "").toUpperCase();
+  const isAuthed = !!token;
+
+  const portal = to.meta?.portal || "customer";
+  const isInventoryRoute = portal === "inventory";
+  const isInventory = role === "INVENTORY";
+  const isSystemRoute = portal === "system";
+  const isCustomer = role === "CUSTOMER";
+
+  if (to.meta?.requiresAuth && !isAuthed) {
+    return isSystemRoute ? "/system/login" : "/login";
+  }
+
+  if (isAuthed) {
+    if (!isSystemRoute && (to.path === "/login" || to.path === "/register")) {
+      return isCustomer ? "/" : "/system/dashboard";
+    }
+
+    if (isSystemRoute && to.path === "/system/login") {
+      return !isCustomer ? "/system/dashboard" : "/";
+    }
+  }
+
+  if (isAuthed) {
+    if (role === "CUSTOMER" && portal !== "customer") return "/";
+    if (role === "INVENTORY" && portal !== "inventory") return "/inventory/orders/paid";
+    if ((role === "ADMIN" || role === "SALES") && portal !== "system")
+      return "/system/dashboard";
+  }
+
+  if (isAuthed) {
+    if (isInventoryRoute && !isInventory) {
+      return isCustomer ? "/" : "/system/dashboard";
+    }
+
+    if (!isInventoryRoute && isInventory) {
+      return "/inventory/orders/paid";
+    }
+  }
+
+  return true;
+});
+
+export default router;FILE: src/stores/auth.js
+import { ref, computed } from "vue";
+import { defineStore, getActivePinia } from "pinia";
+
+export const AUTH_TOKEN_KEY = "access_token";
+export const AUTH_USER_KEY = "auth_user";
+export const LAST_RESPONSE_KEY = "last_auth_response";
+
+const S = {
+  get(key) {
+    return sessionStorage.getItem(key);
+  },
+  set(key, val) {
+    sessionStorage.setItem(key, val);
+  },
+  remove(key) {
+    sessionStorage.removeItem(key);
+  },
+};
+
+function safeJsonParse(raw) {
+  try {
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function decodeJwtPayload(jwt) {
+  try {
+    if (!jwt) return null;
+    const parts = jwt.split(".");
+    if (parts.length < 2) return null;
+    const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    const padded = base64.padEnd(
+      base64.length + ((4 - (base64.length % 4)) % 4),
+      "="
+    );
+    return JSON.parse(atob(padded));
+  } catch {
+    return null;
+  }
+}
+
+export const useAuthStore = defineStore("auth", () => {
+  const token = ref(S.get(AUTH_TOKEN_KEY) || "");
+  const user = ref(safeJsonParse(S.get(AUTH_USER_KEY)));
+  const lastAuthResponse = ref(safeJsonParse(S.get(LAST_RESPONSE_KEY)));
+
+  const role = computed(() =>
+    ((user.value?.role || user.value?.data?.role || "") + "").toUpperCase()
+  );
+  const isAuthed = computed(() => !!token.value);
+  const isCustomer = computed(
+    () => isAuthed.value && role.value === "CUSTOMER"
+  );
+  const displayName = computed(
+    () =>
+      user.value?.username ||
+      user.value?.fullName ||
+      user.value?.name ||
+      user.value?.email ||
+      "User"
+  );
+
+  function setSession({ token: t, user: u }) {
+    if (t) {
+      token.value = t;
+      S.set(AUTH_TOKEN_KEY, t);
+    } else {
+      token.value = "";
+      S.remove(AUTH_TOKEN_KEY);
+    }
+
+    if (u) {
+      user.value = u;
+      S.set(AUTH_USER_KEY, JSON.stringify(u));
+    } else {
+      user.value = null;
+      S.remove(AUTH_USER_KEY);
+    }
+  }
+
+  function clearSession() {
+    token.value = "";
+    user.value = null;
+    S.remove(AUTH_TOKEN_KEY);
+    S.remove(AUTH_USER_KEY);
+  }
+
+  function setLastAuthResponse(resData) {
+    try {
+      lastAuthResponse.value = resData ?? null;
+      S.set(LAST_RESPONSE_KEY, JSON.stringify(resData ?? null));
+    } catch {}
+  }
+
+  function clearLastAuthResponse() {
+    lastAuthResponse.value = null;
+    S.remove(LAST_RESPONSE_KEY);
+  }
+
+  return {
+    token,
+    user,
+    lastAuthResponse,
+    role,
+    isAuthed,
+    isCustomer,
+    displayName,
+    setSession,
+    clearSession,
+    setLastAuthResponse,
+    clearLastAuthResponse,
+  };
+});
+
+// ===== Backward-compatible helpers (used by api/http + legacy pages) =====
+function getStoreOrFallback() {
+  try {
+    if (getActivePinia()) return useAuthStore();
+  } catch {}
+  return null;
+}
+
+export function getToken() {
+  const st = getStoreOrFallback();
+  if (st) return st.token || "";
+  return S.get(AUTH_TOKEN_KEY) || "";
+}
+
+export function getUser() {
+  const st = getStoreOrFallback();
+  if (st) return st.user || null;
+  return safeJsonParse(S.get(AUTH_USER_KEY));
+}
+
+export function getRole() {
+  const st = getStoreOrFallback();
+  if (st) return (st.role || "").toString();
+  const u = safeJsonParse(S.get(AUTH_USER_KEY));
+  return (u?.role || u?.data?.role || "").toString();
+}
+
+export function setSession(payload) {
+  const st = getStoreOrFallback();
+  if (st) return st.setSession(payload);
+  const { token, user } = payload || {};
+  if (token) S.set(AUTH_TOKEN_KEY, token);
+  else S.remove(AUTH_TOKEN_KEY);
+  if (user) S.set(AUTH_USER_KEY, JSON.stringify(user));
+  else S.remove(AUTH_USER_KEY);
+}
+
+export function clearSession() {
+  const st = getStoreOrFallback();
+  if (st) return st.clearSession();
+  S.remove(AUTH_TOKEN_KEY);
+  S.remove(AUTH_USER_KEY);
+}
+
+export function setLastAuthResponse(resData) {
+  const st = getStoreOrFallback();
+  if (st) return st.setLastAuthResponse(resData);
+  try {
+    S.set(LAST_RESPONSE_KEY, JSON.stringify(resData ?? null));
+  } catch {}
+}
+
+export function getLastAuthResponse() {
+  const st = getStoreOrFallback();
+  if (st) return st.lastAuthResponse ?? null;
+  return safeJsonParse(S.get(LAST_RESPONSE_KEY));
+}
+
+export function clearLastAuthResponse() {
+  const st = getStoreOrFallback();
+  if (st) return st.clearLastAuthResponse();
+  S.remove(LAST_RESPONSE_KEY);
+}
