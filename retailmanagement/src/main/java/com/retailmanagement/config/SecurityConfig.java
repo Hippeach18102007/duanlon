@@ -39,26 +39,7 @@ public class SecurityConfig {
     ) throws Exception {
         return configuration.getAuthenticationManager();
     }
-    @Bean
-    public org.springframework.web.cors.CorsConfigurationSource corsConfigurationSource() {
-        org.springframework.web.cors.CorsConfiguration configuration = new org.springframework.web.cors.CorsConfiguration();
-
-        // Cho phép các nguồn sau truy cập
-        configuration.setAllowedOrigins(java.util.Arrays.asList(
-                "http://localhost:5173",
-                "https://duanlon-jvza.vercel.app",
-                "https://duanlon-zh1x.vercel.app" // Thêm tất cả các domain Vercel bạn đang có
-        ));
-
-        configuration.setAllowedMethods(java.util.Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(java.util.Arrays.asList("Authorization", "Content-Type", "Cache-Control"));
-        configuration.setAllowCredentials(true);
-
-        org.springframework.web.cors.UrlBasedCorsConfigurationSource source = new org.springframework.web.cors.UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
-        return source;
-    }
-
+  
     @Bean
     public SecurityFilterChain filterChain(
             HttpSecurity http,
