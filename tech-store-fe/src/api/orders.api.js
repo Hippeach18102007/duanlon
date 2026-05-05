@@ -58,6 +58,12 @@ export const ordersApi = {
     return http.put(`/api/orders/${orderId}/process`);
   },
 
+  // Dành cho Shipper: Upload ảnh bằng chứng giao hàng
+  // Truyền payload: { proofUrl: "..." }
+  uploadProof(orderId, payload) {
+    return http.put(`/api/orders/public/${orderId}/upload-proof`, payload);
+  },
+
   remove(orderId) {
     return http.delete(`/api/orders/${orderId}`);
   },

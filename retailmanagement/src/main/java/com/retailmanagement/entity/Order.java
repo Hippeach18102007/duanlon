@@ -162,6 +162,14 @@ public class Order {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
+    @Nationalized
+    @Lob
+    @Column(name = "delivery_proof_url")
+    private String deliveryProofUrl;
+
+    @Column(name = "shipper_confirmed_at")
+    private Instant shipperConfirmedAt;
+
     @OneToMany(mappedBy = "order")
     private Set<OrderItem> orderItems = new LinkedHashSet<>();
 

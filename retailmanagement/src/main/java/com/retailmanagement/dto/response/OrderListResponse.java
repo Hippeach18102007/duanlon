@@ -30,6 +30,9 @@ public class OrderListResponse {
     private String paymentStatus;
     private Instant createdAt;
 
+    private Instant shippedAt;
+    private Instant updatedAt;
+
     private BigDecimal discountTotal;
 
     public OrderListResponse() {

@@ -2,6 +2,7 @@ package com.retailmanagement.service;
 
 import com.retailmanagement.dto.request.PaymentRequest;
 import com.retailmanagement.dto.response.PaymentResponse;
+import com.retailmanagement.constants.OrderStatuses;
 import com.retailmanagement.entity.*;
 import com.retailmanagement.repository.*;
 import jakarta.transaction.Transactional;
@@ -37,7 +38,8 @@ public class PaymentService {
         Order order = orderRepository.findById(request.getOrderId())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
 
-        if (!"PENDING".equals(order.getStatus())) {
+        if ("ONLINE".equalsIgnoreCase(order.getChannel())
+                && !"PENDING".equals(order.getStatus())) {
             throw new RuntimeException("Chỉ có thể thanh toán đơn hàng ở trạng thái PENDING");
         }
 
@@ -61,7 +63,9 @@ public class PaymentService {
         payment = paymentRepository.save(payment);
 
         order.setPaymentStatus("PAID");
-        order.setStatus("PAID");
+        if ("ONLINE".equalsIgnoreCase(order.getChannel())) {
+            order.setStatus(OrderStatuses.PAID);
+        }
         order.setPaidAt(Instant.now());
         order.setUpdatedAt(Instant.now());
 

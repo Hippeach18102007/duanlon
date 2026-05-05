@@ -72,6 +72,12 @@ const routes = [
     meta: { portal: "customer", requiresAuth: true },
   },
   {
+    path: "/delivery-confirm/:orderId",
+    name: "delivery-confirm",
+    component: () => import("../pages/public/DeliveryConfirm.vue"),
+    meta: { portal: "customer", hideHeader: true },
+  },
+  {
     path: "/",
     name: "home",
     component: CustomerHome,

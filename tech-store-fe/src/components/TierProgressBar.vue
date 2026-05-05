@@ -29,7 +29,12 @@
             {{ progress.nextTierDisplay }}
           </el-tag>
         </el-space>
-        <el-text v-else>🏆 Hạng cao nhất</el-text>
+        <el-text v-else>
+          <span style="display: inline-flex; align-items: center; gap: 4px;">
+            <el-icon><Trophy /></el-icon>
+            Hạng cao nhất
+          </span>
+        </el-text>
       </div>
 
       <!-- Right: discount + chevron -->
@@ -73,9 +78,21 @@
             (≈ {{ formatMoney(progress.amountNeededForVip) }}) nữa là trở thành <strong>VIP</strong>!
           </el-text>
           <el-space wrap :size="6" style="margin-top: 6px;">
-            <el-tag size="small" type="warning" effect="plain">✨ Giảm giá cao hơn</el-tag>
-            <el-tag size="small" type="warning" effect="plain">🎁 Ưu đãi độc quyền</el-tag>
-            <el-tag size="small" type="warning" effect="plain">⚡ Tích điểm x2</el-tag>
+            <el-tag size="small" type="warning" effect="plain">
+              <span style="display: inline-flex; align-items: center; gap: 4px;">
+                <el-icon><MagicStick /></el-icon> Giảm giá cao hơn
+              </span>
+            </el-tag>
+            <el-tag size="small" type="warning" effect="plain">
+              <span style="display: inline-flex; align-items: center; gap: 4px;">
+                <el-icon><Present /></el-icon> Ưu đãi độc quyền
+              </span>
+            </el-tag>
+            <el-tag size="small" type="warning" effect="plain">
+              <span style="display: inline-flex; align-items: center; gap: 4px;">
+                <el-icon><Opportunity /></el-icon> Tích điểm x2
+              </span>
+            </el-tag>
           </el-space>
         </template>
       </el-alert>
@@ -119,7 +136,10 @@
           v-if="progress.nextTier && progress.nextTierDiscountRate"
           label="Sau khi lên hạng"
         >
-          {{ getTierBenefitShort(progress.nextTier) }} ↗
+          <span style="display: inline-flex; align-items: center; gap: 4px;">
+            {{ getTierBenefitShort(progress.nextTier) }}
+            <el-icon><TopRight /></el-icon>
+          </span>
         </el-descriptions-item>
       </el-descriptions>
 
@@ -139,7 +159,7 @@
 </template>
 
 <script setup>
-import { ArrowDown } from '@element-plus/icons-vue';
+import { ArrowDown, Trophy, MagicStick, Present, Opportunity, TopRight } from '@element-plus/icons-vue';
 import { ref, onMounted } from 'vue';
 import http from '../api/http';
 

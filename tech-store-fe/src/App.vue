@@ -1,6 +1,6 @@
 <template>
   <Analytics />
-  <el-container>
+  <el-container style="height: 100%; overflow: hidden;">
 
     <!-- ─── Header ─────────────────────────────────────── -->
     <el-header v-if="showHeader" height="72px" style="position: sticky; top: 0; z-index: 100; background: rgba(255,255,255,0.92); backdrop-filter: blur(16px); border-bottom: 1px solid var(--el-border-color-light); box-shadow: var(--el-box-shadow-light);">
@@ -133,7 +133,7 @@
     </el-header>
 
     <!-- ─── Main ───────────────────────────────────────── -->
-    <el-main>
+    <el-main :style="mainStyle">
       <router-view />
     </el-main>
 
@@ -157,7 +157,9 @@
           >
             <el-row align="middle" :gutter="8">
               <el-col :span="2">
-                <el-text size="large">{{ notifIcon(notif.type) }}</el-text>
+                <el-icon style="font-size: 20px; color: var(--el-color-primary);">
+                  <component :is="notifIconComponent(notif.type)" />
+                </el-icon>
               </el-col>
               <el-col :span="20">
                 <el-space direction="vertical" :size="2" fill>
@@ -199,8 +201,9 @@
 
 <script setup>
 import {
-  ArrowDown, Bell, Check, Document, Grid, Lock,
-  Monitor, Right, Search, ShoppingBag, SwitchButton, Trophy, User,
+  ArrowDown, Bell, Calendar, Check, Document, Grid, Lock,
+  Monitor, Present, Right, Search, ShoppingBag, ShoppingCart, StarFilled,
+  SwitchButton, Timer, Trophy, User,
 } from "@element-plus/icons-vue";
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
@@ -239,6 +242,20 @@ const showSearch = computed(
 const showFooter = computed(
   () => route.meta?.hideHeader !== true && (route.meta?.portal || "customer") === "customer",
 );
+
+// el-main style: system pages get no padding and fill remaining height
+const mainStyle = computed(() => {
+  if (isSystemUser.value || route.meta?.hideHeader === true) {
+    const headerH = showHeader.value ? 72 : 0;
+    return {
+      padding: '0',
+      height: `calc(100% - ${headerH}px)`,
+      overflow: 'hidden',
+    };
+  }
+  // Customer pages: padding 0, ch-wrap manages its own internal padding
+  return { padding: '0', overflow: 'auto' };
+});
 
 function emitSearch() {
   window.dispatchEvent(new CustomEvent("products:search", { detail: q.value }));
@@ -304,7 +321,7 @@ async function checkAndShowNewNotifications() {
         toast(
           formatMessage(notif.message),
           notifToastType(notif.type),
-          { title: `${notifIcon(notif.type)} ${notif.title}`, delay: 5000, html: true }
+          { title: notif.title, delay: 5000, html: true }
         );
       }
     });
@@ -329,8 +346,15 @@ async function markAllAsRead() {
   } catch { toast("Không thể cập nhật thông báo", "error", { title: "Lỗi cập nhật" }); }
 }
 
-function notifIcon(type) {
-  return ({ WELCOME:"🎁", BIRTHDAY:"🎂", PURCHASE_REMINDER:"🛒", WINBACK:"💝", VIP_TIER_UPGRADE:"⭐", SPIN_EXPIRY_WARNING:"🎡" }[type] ?? "🔔");
+function notifIconComponent(type) {
+  return ({
+    WELCOME:              Present,
+    BIRTHDAY:             Calendar,
+    PURCHASE_REMINDER:    ShoppingCart,
+    WINBACK:              StarFilled,
+    VIP_TIER_UPGRADE:     Trophy,
+    SPIN_EXPIRY_WARNING:  Timer,
+  }[type] ?? Bell);
 }
 function formatMessage(msg) { return msg ? msg.replace(/\n/g, "<br>") : ""; }
 function formatDate(d) { return new Date(d).toLocaleDateString("vi-VN"); }

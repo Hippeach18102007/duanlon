@@ -94,6 +94,9 @@ public class OrderQueryService {
         dto.setPaymentStatus(order.getPaymentStatus());   // nếu cần
         dto.setCreatedAt(order.getCreatedAt());
 
+        dto.setShippedAt(order.getShippedAt());           // nếu có
+        dto.setUpdatedAt(order.getUpdatedAt());           // nếu có
+
         dto.setDiscountTotal(order.getDiscountTotal()); // nếu có
 
         return dto;

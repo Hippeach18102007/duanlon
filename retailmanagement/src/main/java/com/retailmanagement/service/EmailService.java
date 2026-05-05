@@ -88,6 +88,95 @@ public class EmailService {
         return (s != null && !s.isBlank()) ? s : fallback;
     }
 
+    @Async
+    public void sendDeliveryProofEmail(Order order) {
+        try {
+            if (order.getCustomer() == null || order.getCustomer().getEmail() == null) return;
+
+            Resend resend = new Resend(apiKey);
+
+            String customerName = safe(order.getCustomer().getName(), "Khách hàng");
+            String orderNumber = order.getOrderNumber();
+
+            // Link URL gắn mã động gọi thẳng về Frontend bật Popup
+            String frontendUrl = "http://localhost:5173/orders/" + order.getId() + "?action=confirm_delivered";
+
+            String html = """
+            <!DOCTYPE html>
+            <html lang="vi">
+            <head>
+              <meta charset="UTF-8"/>
+              <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+              <title>Thông báo giao hàng</title>
+            </head>
+            <body style="margin:0;padding:0;background:#f2f2f2;font-family:Arial,Helvetica,sans-serif;">
+              <table width="100%%" cellpadding="0" cellspacing="0" style="background:#f2f2f2;padding:30px 0;">
+                <tr><td align="center">
+                  <table width="600" cellpadding="0" cellspacing="0"
+                         style="max-width:600px;width:100%%;background:#ffffff;border:1px solid #cccccc;">
+                    <tr>
+                      <td style="background:#1a2744;padding:24px 32px;">
+                        <p style="margin:0;font-size:11px;letter-spacing:3px;color:#aabbd4;
+                                   text-transform:uppercase;font-weight:bold;">TECHSTORE</p>
+                        <p style="margin:8px 0 0;font-size:18px;font-weight:bold;color:#ffffff;">
+                          Đơn hàng đang chờ xác nhận
+                        </p>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:24px 32px 0;">
+                        <p style="margin:0;font-size:14px;color:#333;">Xin chào <strong>%s</strong>,</p>
+                        <p style="margin:10px 0 0;font-size:13px;color:#555;line-height:1.6;">
+                          Shipper vừa xác nhận đã giao đơn hàng <strong>#%s</strong> tới bạn.<br/>
+                          Vui lòng kiểm tra hàng hoá và bấm xác nhận bên dưới để hoàn tất đơn hàng nhé!
+                        </p>
+                        
+                        <!-- NÚT BẤM XÁC NHẬN -->
+                        <div style="text-align:center; margin: 32px 0;">
+                          <a href="%s" style="background-color:#2a6e2a; color:#ffffff; padding:14px 28px; font-size:14px; font-weight:bold; text-decoration:none; border-radius:6px; display:inline-block; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                            ✅ XÁC NHẬN ĐÃ NHẬN HÀNG
+                          </a>
+                        </div>
+                        
+                        <div style="background:#fffbea; border:1px solid #f5c518; padding:12px; margin-top:20px;">
+                            <p style="font-size:12px;color:#7a5800;margin:0;line-height:1.5;">
+                              *Lưu ý: Nếu bạn không có phản hồi trong vòng <strong>3 ngày</strong>, hệ thống sẽ tự động chuyển đơn hàng sang trạng thái Đã Giao.
+                            </p>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:24px 32px 28px;text-align:center;border-top:1px solid #ddd;">
+                        <p style="margin:0 0 4px;font-size:12px;font-weight:bold;color:#555;">TechStore</p>
+                        <p style="margin:0;font-size:12px;color:#999;line-height:1.7;">
+                          Nếu cần hỗ trợ, vui lòng liên hệ
+                          <a href="mailto:support@nguyenduc.me" style="color:#1a2744;text-decoration:underline;">
+                            support@nguyenduc.me
+                          </a>
+                        </p>
+                      </td>
+                    </tr>
+                  </table>
+                </td></tr>
+              </table>
+            </body>
+            </html>
+            """.formatted(customerName, orderNumber, frontendUrl);
+
+            CreateEmailOptions params = CreateEmailOptions.builder()
+                    .from("TechStore <noreply@nguyenduc.me>")
+                    .to(order.getCustomer().getEmail())
+                    .subject("Đơn hàng #" + orderNumber + " đang chờ bạn xác nhận")
+                    .html(html)
+                    .build();
+
+            resend.emails().send(params);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     // ── Build item rows ───────────────────────────────────────────────────
     private String buildItemRows(Order order) {
         if (order.getOrderItems() == null || order.getOrderItems().isEmpty()) return "";
@@ -754,7 +843,7 @@ public class EmailService {
                 </tr>
                 <tr>
                   <td style="padding:9px 12px;font-size:13px;color:#666;background:#fafafa;
-                              border-right:1px solid #eee;">Ly do tu choi</td>
+                              border-bottom:1px solid #eee;border-right:1px solid #eee;">Ly do tu choi</td>
                   <td style="padding:9px 12px;font-size:13px;color:#6b1a1a;font-weight:bold;">%s</td>
                 </tr>
               </table>

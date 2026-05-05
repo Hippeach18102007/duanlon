@@ -103,15 +103,6 @@
         </el-table-column>
 
         <!-- Customer -->
-        <el-table-column prop="customerName" label="Khách hàng" min-width="160">
-          <template #default="{ row }">
-            <el-space>
-              <el-avatar :size="28">{{ initials(row.customerName) }}</el-avatar>
-              <el-text>{{ row.customerName }}</el-text>
-            </el-space>
-          </template>
-        </el-table-column>
-
         <!-- Amount -->
         <el-table-column label="Giá trị" min-width="130" align="right">
           <template #default="{ row }">
@@ -125,8 +116,8 @@
             <el-tag v-if="row.status === 'PAID'" type="success" effect="light" round>
               Đã thanh toán
             </el-tag>
-            <el-tag v-else-if="row.status === 'PENDING'" type="warning" effect="dark" round>
-              Chờ thanh toán (COD)
+            <el-tag v-else-if="row.status === 'PENDING'" type="primary" effect="light" round>
+              Thu hộ (COD)
             </el-tag>
             <el-tag v-else type="info" effect="light" round>
               {{ row.status }}

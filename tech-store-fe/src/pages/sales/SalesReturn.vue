@@ -1,60 +1,61 @@
 <template>
-  <div class="sales-return">
-    <!-- ══════════ HEADER ══════════ -->
-    <el-row align="middle" justify="space-between" class="header">
-      <el-space :size="12">
-        <el-tooltip content="Quay lại tìm đơn khác" placement="bottom">
-          <el-button v-if="order" :icon="ArrowLeft" @click="reset" link>Tìm đơn khác</el-button>
-        </el-tooltip>
-        <el-space direction="vertical" :size="0">
-          <el-text tag="b" size="large">TRẢ HÀNG TẠI QUẦY</el-text>
-          <el-text type="info" size="small">
+  <div class="sr-layout">
+    <!-- ══════ STICKY HEADER ══════ -->
+    <div class="sr-header">
+      <div class="sr-header-left">
+        <el-button v-if="order" :icon="ArrowLeft" @click="reset" link class="back-btn">Tìm đơn khác</el-button>
+        <div>
+          <div class="sr-title">TRẢ HÀNG TẠI QUẦY</div>
+          <div class="sr-sub">
             <span v-if="order">
-              Đang xem: <strong>{{ order.orderNumber || `#${order.id}` }}</strong>
-              <el-tag size="small" :type="orderStatusType(order.status)" plain class="ml-8">{{ order.status }}</el-tag>
+              Đang xem: <b>{{ order.orderNumber || `#${order.id}` }}</b>
+              <el-tag size="small" :type="orderStatusType(order.status)" effect="plain" class="ml-8">{{ order.status }}</el-tag>
             </span>
             <span v-else>Xử lý đổi trả và hoàn tiền khách hàng</span>
-          </el-text>
-        </el-space>
-      </el-space>
+          </div>
+        </div>
+      </div>
       <el-tooltip v-if="order" content="Tải lại thông tin đơn" placement="left">
-        <el-button :icon="Refresh" circle @click="handleSearch" plain />
+        <el-button :icon="Refresh" circle @click="handleSearch" plain size="small" />
       </el-tooltip>
-    </el-row>
+    </div>
 
-    <!-- ══════════ STEP PROGRESS ══════════ -->
+    <!-- ══════ STEP PROGRESS ══════ -->
     <el-steps v-if="order" :active="currentStep" finish-status="success" class="steps-bar">
-      <el-step title="Tìm đơn" description="Nhập mã đơn" />
-      <el-step title="Chọn hàng trả" description="Chọn sản phẩm + lý do" />
-      <el-step title="Thẩm định" description="Admin xét duyệt" />
-      <el-step title="Hoàn tất" description="Hoàn tiền khách" />
+      <el-step title="Tìm đơn" />
+      <el-step title="Chọn hàng trả" />
+      <el-step title="Thẩm định" />
+      <el-step title="Hoàn tất" />
     </el-steps>
 
-    <!-- ══════════ SEARCH SECTION ══════════ -->
-    <el-card v-if="!order" shadow="never">
-      <el-space direction="vertical" fill :size="20" class="search-wrap">
-        <el-space direction="vertical" :size="4" align="center">
-          <el-text tag="h2" style="margin: 0">Bắt đầu xử lý trả hàng</el-text>
-          <el-text type="info">Nhập mã đơn hàng (ID số hoặc mã ORD-xxx) để tra cứu</el-text>
-        </el-space>
-        <el-input
-          v-model="searchId"
-          placeholder="Nhập Order ID hoặc Order Number..."
-          @keyup.enter="handleSearch"
-          size="large"
-          style="max-width: 520px"
-          clearable
-        >
-          <template #prefix><el-icon><Search /></el-icon></template>
-          <template #append>
-            <el-button @click="handleSearch" :loading="loading" plain>KIỂM TRA</el-button>
-          </template>
-        </el-input>
-      </el-space>
-    </el-card>
+    <!-- ══════ CONTENT AREA ══════ -->
+    <div class="sr-body">
+      <!-- Search Screen -->
+      <div v-if="!order" class="search-screen">
+        <div class="search-card">
+          <div class="search-icon-wrap">
+            <el-icon :size="40" color="#409eff"><Search /></el-icon>
+          </div>
+          <div class="search-title">Bắt đầu xử lý trả hàng</div>
+          <div class="search-sub">Nhập mã đơn hàng (đị số hoặc ORD-xxx) để tra cứu</div>
+          <el-input
+            v-model="searchId"
+            placeholder="VD: ORD-20240001 hoặc số ID..."
+            @keyup.enter="handleSearch"
+            size="large"
+            clearable
+            class="search-input"
+          >
+            <template #prefix><el-icon><Search /></el-icon></template>
+            <template #append>
+              <el-button @click="handleSearch" :loading="loading" type="primary">KIỂM TRA</el-button>
+            </template>
+          </el-input>
+        </div>
+      </div>
 
-    <!-- ══════════ WORKFLOW ══════════ -->
-    <div v-if="order">
+    <!-- ══════ WORKFLOW ══════ -->
+    <div v-if="order" class="sr-workflow">
       <el-row :gutter="20">
         <!-- ─── LEFT COL: Order Info & Items ─── -->
         <el-col :span="16">
@@ -369,8 +370,9 @@
 
         </el-col>
       </el-row>
-    </div>
-  </div>
+    </div><!-- /sr-workflow -->
+  </div><!-- /sr-body -->
+</div><!-- /sr-layout -->
 </template>
 
 <script setup>
@@ -382,7 +384,7 @@ import { toast } from '../../ui/toast';
 import { confirmModal } from '../../ui/confirm';
 
 // ── State ─────────────────────────────────────────────────────────────
-const searchId        = ref('');
+const searchId        = ref('ORD-');
 const loading         = ref(false);
 const submitting      = ref(false);
 const order           = ref(null);
@@ -688,16 +690,56 @@ function reset() {
   returnReason.value   = '';
   reasonError.value    = '';
   returnImage.value    = null;
-  searchId.value       = '';
+  searchId.value       = 'ORD-';
   Object.keys(returnQuantities).forEach(k => delete returnQuantities[k]);
 }
 </script>
 
 <style scoped>
-.sales-return  { padding: 0; min-height: 100vh; background: #f5f7fa; }
-.header        { padding: 10px 0; margin-bottom: 16px; }
-.steps-bar     { margin-bottom: 24px; background: #fff; padding: 20px 24px; border-radius: 4px; border: 1px solid #dcdfe6; }
-.search-wrap   { text-align: center; padding: 60px 40px; }
+/* ── Layout ── */
+.sr-layout { background: #f5f7fa; min-height: 100%; }
+
+/* ── Sticky header ── */
+.sr-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 0 14px; margin-bottom: 16px;
+  border-bottom: 1px solid #ebeef5;
+}
+.sr-header-left { display: flex; align-items: center; gap: 12px; }
+.sr-title { font-size: 16px; font-weight: 800; color: #1a1a2e; letter-spacing: -0.3px; }
+.sr-sub   { font-size: 12px; color: #909399; margin-top: 3px; }
+.back-btn { font-size: 12px; }
+
+/* ── Steps ── */
+.steps-bar     { margin-bottom: 24px; background: #fff; padding: 16px 24px; border-radius: 6px; border: 1px solid #ebeef5; }
+
+/* ── Body ── */
+.sr-body     { }
+.sr-workflow { }
+
+/* ── Search screen ── */
+.search-screen {
+  display: flex; align-items: center; justify-content: center;
+  min-height: 380px;
+}
+.search-card {
+  width: 100%; max-width: 540px;
+  background: #fff; border-radius: 12px;
+  border: 1px solid #ebeef5;
+  padding: 48px 40px;
+  text-align: center;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+}
+.search-icon-wrap {
+  width: 72px; height: 72px;
+  border-radius: 50%;
+  background: #ecf5ff;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 20px;
+}
+.search-title { font-size: 18px; font-weight: 700; color: #1a1a2e; margin-bottom: 6px; }
+.search-sub   { font-size: 13px; color: #909399; margin-bottom: 24px; }
+.search-input { text-align: left; }
 .mb-20         { margin-bottom: 20px; }
 .mb-10         { margin-bottom: 10px; }
 .mt-10         { margin-top: 10px; }

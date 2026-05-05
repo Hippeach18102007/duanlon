@@ -31,53 +31,74 @@
           <div class="mt-10"><el-text color="#909399">Đang tra cứu kho hàng...</el-text></div>
         </div>
 
-        <!-- Results List (Compact Cards) -->
+        <!-- Results List -->
         <div v-else-if="productGroups.length">
-          <el-row :gutter="15">
-            <el-col v-for="product in productGroups" :key="product.name" :span="24" class="mb-15">
-              <el-card shadow="hover" body-style="padding: 12px">
-                <template #header>
-                  <div class="card-header-compact">
-                    <el-text tag="b" size="large">{{ product.name }}</el-text>
-                    <el-tag v-if="product.id" size="small" type="info" effect="plain">ID: {{ product.id }}</el-tag>
-                  </div>
-                </template>
+          <div v-for="product in productGroups" :key="product.name" class="product-result-card mb-15">
+            <!-- Card header -->
+            <div class="prc-header">
+              <div class="prc-name">{{ product.name }}</div>
+              <el-tag v-if="product.id" size="small" type="info" effect="plain">ID: {{ product.id }}</el-tag>
+            </div>
 
-                <div v-for="variant in product.variants" :key="variant.name" class="variant-item-compact">
-                  <el-row justify="space-between" align="middle">
-                    <el-space :size="5">
-                      <el-text tag="b" size="small" color="#606266">{{ variant.name }}</el-text>
-                      <el-text type="danger" tag="b">{{ formatMoney(variant.price) }}</el-text>
-                    </el-space>
-                    
-                    <el-space>
-                      <!-- Cảnh báo tồn kho thấp (< 5) -->
-                      <el-tag v-if="variant.remainingCount > 0 && variant.remainingCount < 5" type="danger" effect="dark" size="small" class="blink-tag">
-                        SẮP HẾT HÀNG
-                      </el-tag>
-                      <el-tag :type="variant.remainingCount > 0 ? 'success' : 'info'" size="small">
-                        Kho: {{ variant.remainingCount }}
-                      </el-tag>
-                    </el-space>
-                  </el-row>
-
-                  <div class="serial-grid mt-10">
-                    <el-button
-                      v-for="s in variant.serials"
-                      :key="s.id"
-                      size="small"
-                      :type="alreadyInCart(s.id) ? 'success' : 'default'"
-                      :disabled="alreadyInCart(s.id)"
-                      @click="addToCart(s, variant, product.name)"
-                      class="serial-btn"
-                    >
-                      {{ serialCode(s) }}
-                    </el-button>
-                  </div>
+            <!-- Variants -->
+            <div v-for="variant in product.variants" :key="variant.name" class="variant-block">
+              <!-- Variant meta row -->
+              <div class="variant-meta">
+                <div class="variant-left">
+                  <span class="variant-name">{{ variant.name }}</span>
+                  <span class="variant-price">{{ formatMoney(variant.price) }}</span>
                 </div>
-              </el-card>
-            </el-col>
-          </el-row>
+                <div class="variant-right">
+                  <el-tag
+                    v-if="variant.remainingCount > 0 && variant.remainingCount < 5"
+                    type="danger" effect="dark" size="small" class="blink-tag"
+                  >SẮP HẾT HÀNG</el-tag>
+                  <el-tag
+                    :type="variant.remainingCount > 0 ? 'success' : 'danger'"
+                    effect="light" size="small"
+                  >
+                    {{ variant.remainingCount }} trong kho
+                  </el-tag>
+                </div>
+              </div>
+
+              <!-- Serial filter (always show when > 3 serials) -->
+              <div v-if="variant.serials.length > 3" class="serial-filter-wrap">
+                <el-input
+                  v-model="variantSerialFilter[variant.id]"
+                  :placeholder="`Tìm trong ${variant.serials.length} serial…`"
+                  size="small"
+                  clearable
+                >
+                  <template #prefix><el-icon><Search /></el-icon></template>
+                </el-input>
+                <span class="serial-filter-hint">
+                  {{ filteredSerials(variant).length }} / {{ variant.serials.length }}
+                </span>
+              </div>
+
+              <!-- Serial grid -->
+              <div class="serial-grid-wrap">
+                <button
+                  v-for="s in filteredSerials(variant)"
+                  :key="s.id"
+                  class="serial-pill"
+                  :class="{
+                    'is-matched': isMatchedSerial(s) && !alreadyInCart(s.id),
+                    'is-in-cart': alreadyInCart(s.id),
+                  }"
+                  :disabled="alreadyInCart(s.id)"
+                  @click="addToCart(s, variant, product.name)"
+                  :title="serialCode(s)"
+                >
+                  <span v-if="alreadyInCart(s.id)" class="pill-icon">✓</span>
+                  <span v-else-if="isMatchedSerial(s)" class="pill-icon">&#9889;</span>
+                  {{ serialCode(s) }}
+                </button>
+                <span v-if="filteredSerials(variant).length === 0" class="serial-empty">Không có serial khớp</span>
+              </div>
+            </div>
+          </div>
         </div>
 
         <el-empty v-else-if="!searchLoading" :description="hasSearched ? 'Không tìm thấy máy nào khớp' : 'Sẵn sàng bán hàng (F2 để tìm)'" />
@@ -98,40 +119,41 @@
           </el-row>
         </div>
 
-        <!-- Compact Cart Table -->
-        <div class="cart-container">
-          <el-table :data="cart" size="small" class="compact-table" :show-header="false">
-            <el-table-column>
-              <template #default="{ row }">
-                <div class="cart-item-info">
-                  <el-text tag="b" size="small" truncated>{{ row.productName }}</el-text>
-                  <div class="flex-row">
-                    <el-text size="extra-small" type="info">{{ row.variantName }}</el-text>
-                    <el-text size="extra-small" type="warning" class="mono ml-10">{{ row.serialCode }}</el-text>
-                  </div>
-                </div>
-              </template>
-            </el-table-column>
-            <el-table-column align="right" width="100">
-              <template #default="{ row }">
-                <div class="cart-item-price">
-                  <el-text tag="b" size="small">{{ formatMoney(row.price) }}</el-text>
-                  <el-button :icon="Close" circle size="extra-small" @click="removeFromCart(row.serialId)" type="danger" plain />
-                </div>
-              </template>
-            </el-table-column>
-          </el-table>
-          <el-empty v-if="!cart.length" description="Giỏ hàng trống" :image-size="40" />
+        <!-- Draft restore prompt -->
+        <div v-if="showDraftPrompt" class="draft-prompt">
+          <div class="draft-prompt-text">
+            <el-icon><InfoFilled /></el-icon>
+            Có đơn nháp ({{ draftCartPreview }}) từ lần trước
+          </div>
+          <div class="draft-prompt-actions">
+            <el-button size="small" type="primary" plain @click="restoreDraft">Khôi phục</el-button>
+            <el-button size="small" @click="dismissDraft">Bỏ qua</el-button>
+          </div>
+        </div>
+
+        <!-- Cart list -->
+        <div class="cart-list">
+          <div v-if="!cart.length" class="cart-empty">
+            <el-icon :size="32" color="#dcdfe6"><ShoppingCart /></el-icon>
+            <span>Giỏ hàng trống</span>
+          </div>
+          <div v-for="item in cart" :key="item.serialId" class="cart-row">
+            <div class="cart-row-info">
+              <div class="cart-row-name">{{ item.productName }}</div>
+              <div class="cart-row-sub">
+                <span class="cart-row-variant">{{ item.variantName }}</span>
+                <span class="cart-row-serial">{{ item.serialCode }}</span>
+              </div>
+            </div>
+            <div class="cart-row-right">
+              <div class="cart-row-price">{{ formatMoney(item.price) }}</div>
+              <button class="cart-remove-btn" @click="removeFromCart(item.serialId)" title="Xóa">×</button>
+            </div>
+          </div>
         </div>
 
         <!-- Footer Section (Fixed Bottom) -->
         <div class="sidebar-footer">
-          <!-- Draft Indicator -->
-          <div v-if="hasDraft" class="draft-tip">
-            <el-text size="extra-small" type="info"><el-icon><InfoFilled /></el-icon> Đã lưu bản nháp tự động</el-text>
-          </div>
-
-          <!-- Customer info -->
           <div class="footer-block customer-section">
             <el-row :gutter="8">
               <el-col :span="18">
@@ -335,7 +357,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from "vue";
-import { Monitor, Loading, ShoppingCart, Delete, Close, User, Wallet, InfoFilled, Medal, Present } from "@element-plus/icons-vue";
+import { Monitor, Loading, ShoppingCart, Delete, Close, User, Wallet, InfoFilled, Medal, Present, Search } from "@element-plus/icons-vue";
 import { productsApi } from "../../api/products.api";
 import { serialsApi } from "../../api/serials.api";
 import { promotionsApi } from "../../api/promotions.api";
@@ -354,6 +376,8 @@ const searchLoading = ref(false);
 const searchError = ref("");
 const productGroups = ref([]);
 const hasSearched = ref(false);
+const variantSerialFilter = ref({});   // { [variantId]: filterString }
+const searchedKeyword = ref('');        // keyword gốc để highlight serial khớp
 
 const cart = ref([]);
 const cusQuery = ref("");
@@ -415,27 +439,55 @@ const formatMoney = (v) => new Intl.NumberFormat("vi-VN", { style: "currency", c
 const formatShort = (v) => v >= 1000000 ? (v / 1000000).toFixed(1) + "Tr" : (v / 1000).toFixed(0) + "K";
 const serialCode = (s) => s.serialNumber ?? s.serialCode ?? s.code ?? "";
 
-// ── [NEW] Draft Order Logic ──
-watch([cart, foundCustomer], () => {
-  if (cart.value.length > 0 || foundCustomer.value) {
-    localStorage.setItem("pos_draft_cart", JSON.stringify(cart.value));
-    localStorage.setItem("pos_draft_customer", JSON.stringify(foundCustomer.value));
-    hasDraft.value = true;
+// ── Draft Order Logic ────────────────────────────────────
+// Lưu có chọn lọc: chỉ lưu cart + customerQuery, không lưu full customer object
+watch(cart, () => {
+  if (cart.value.length > 0) {
+    localStorage.setItem('pos_draft', JSON.stringify({
+      cart:          cart.value,
+      customerQuery: cusQuery.value,
+      timestamp:     Date.now(),
+    }));
   } else {
-    localStorage.removeItem("pos_draft_cart");
-    localStorage.removeItem("pos_draft_customer");
-    hasDraft.value = false;
+    localStorage.removeItem('pos_draft');
+    showDraftPrompt.value = false;
   }
 }, { deep: true });
 
 function loadDraft() {
-  const sCart = localStorage.getItem("pos_draft_cart");
-  const sCus = localStorage.getItem("pos_draft_customer");
-  if (sCart) {
-    cart.value = JSON.parse(sCart);
-    hasDraft.value = true;
-  }
-  if (sCus) foundCustomer.value = JSON.parse(sCus);
+  try {
+    const raw = localStorage.getItem('pos_draft');
+    if (!raw) return;
+    const draft = JSON.parse(raw);
+    // Chỉ khôi phục nếu dưới 4 tiếng
+    if (Date.now() - draft.timestamp > 4 * 60 * 60 * 1000) {
+      localStorage.removeItem('pos_draft');
+      return;
+    }
+    if (draft.cart?.length) {
+      const count   = draft.cart.length;
+      const preview = draft.cart.slice(0, 2).map(i => i.productName).join(', ');
+      draftCartPreview.value = `${count} sản phẩm: ${preview}${count > 2 ? '…' : ''}`;
+      showDraftPrompt.value = true;
+    }
+  } catch { localStorage.removeItem('pos_draft'); }
+}
+
+function restoreDraft() {
+  try {
+    const draft = JSON.parse(localStorage.getItem('pos_draft') || '{}');
+    if (draft.cart?.length) {
+      cart.value = draft.cart;
+      if (draft.customerQuery) cusQuery.value = draft.customerQuery;
+      toast(`Đã khôi phục đơn nháp (${draft.cart.length} sản phẩm)`, 'success');
+    }
+  } catch { /* ignore */ }
+  showDraftPrompt.value = false;
+}
+
+function dismissDraft() {
+  localStorage.removeItem('pos_draft');
+  showDraftPrompt.value = false;
 }
 
 // ── Business Logic (Price + Search) ──
@@ -453,10 +505,11 @@ async function doSearch() {
   searchLoading.value = true;
   searchError.value = "";
   productGroups.value = [];
+  variantSerialFilter.value = {};
+  searchedKeyword.value = q;
   try {
     const res = await serialsApi.list({ keyword: q, size: 50 });
     const rawData = res.data?.data ?? res.data;
-    // Hỗ trợ cả Page object (.content) và mảng phẳng
     const items = Array.isArray(rawData?.content) ? rawData.content : (Array.isArray(rawData) ? rawData : []);
     
     if (!items.length) { searchError.value = `Không tìm thấy serial "${q}".`; return; }
@@ -471,16 +524,17 @@ async function doSearch() {
       if (!groupMap[pName]) groupMap[pName] = { name: pName, variants: {} };
       if (!groupMap[pName].variants[vName]) {
         const vId = serial.variantId || serial.productVariantId || serial.variant?.id || serial.productVariant?.id;
-        groupMap[pName].variants[vName] = { id: vId, name: vName, price: 0, remainingCount: 0, serials: [] };
+        groupMap[pName].variants[vName] = { id: vId, name: vName, price: 0, remainingCount: 0, serials: [], matchedSerialIds: new Set() };
       }
-      groupMap[pName].variants[vName].serials.push(serial);
-      groupMap[pName].variants[vName].remainingCount++;
+      // Đánh dấu serial này là matched (từ tìm kiếm)
+      groupMap[pName].variants[vName].matchedSerialIds.add(serial.id);
     }
 
-    productGroups.value = Object.values(groupMap).map(g => ({ ...g, variants: Object.values(g.variants) }));
+    const groups = Object.values(groupMap).map(g => ({ ...g, variants: Object.values(g.variants) }));
+    productGroups.value = groups;
 
-    // Fetch variant price - Robust name matching
-    await Promise.all(productGroups.value.map(async (group) => {
+    // Fetch giá + toàn bộ serial IN_STOCK thực tế của từng variant
+    await Promise.all(groups.map(async (group) => {
       try {
         const pRes = await productsApi.list({ keyword: group.name, size: 5 });
         const pData = pRes.data?.data ?? pRes.data;
@@ -491,13 +545,27 @@ async function doSearch() {
           group.id = product.id;
           const vRes = await productsApi.getVariants(product.id);
           const vList = vRes.data?.data || vRes.data || [];
-          group.variants.forEach(v => {
+
+          await Promise.all(group.variants.map(async (v) => {
             const match = vList.find(vo => vo.id === v.id || vo.variantName === v.name || vo.name === v.name);
             if (match) {
               if (!v.id) v.id = match.id;
               if (match.price) v.price = Number(match.price);
             }
-          });
+
+            // Load toàn bộ serial IN_STOCK của variant này
+            if (v.id) {
+              try {
+                const sRes = await productsApi.getSerials(v.id);
+                const allSerials = sRes.data?.data ?? sRes.data ?? [];
+                const inStock = allSerials.filter(s => !SOLD_STATUSES.includes((s.status || '').toLowerCase()) && s.status?.toUpperCase() !== 'SOLD');
+                // Sắp xếp: matched serial lên đầu
+                inStock.sort((a, b) => (v.matchedSerialIds.has(b.id) ? 1 : 0) - (v.matchedSerialIds.has(a.id) ? 1 : 0));
+                v.serials = inStock;
+                v.remainingCount = inStock.length;
+              } catch { /* giữ nguyên matched serials nếu lỗi */ }
+            }
+          }));
         }
       } catch (err) { console.warn("Bỏ qua lỗi lấy giá cho:", group.name); }
     }));
@@ -510,6 +578,12 @@ async function doSearch() {
 
 // ── Actions ──
 const alreadyInCart = (sid) => cart.value.some(i => i.serialId === sid);
+const isMatchedSerial = (s) => s.serialNumber?.toLowerCase().includes(searchedKeyword.value.toLowerCase());
+const filteredSerials = (variant) => {
+  const f = (variantSerialFilter.value[variant.id] || '').toLowerCase();
+  if (!f) return variant.serials;
+  return variant.serials.filter(s => serialCode(s).toLowerCase().includes(f));
+};
 
 function addToCart(serial, variant, productName) {
   const sid = serial.id;
@@ -715,7 +789,8 @@ function resetAll() {
   cart.value = []; foundCustomer.value = null; cusQuery.value = "";
   orderNotes.value = ""; searchQuery.value = ""; clearPromo();
   vipDiscountPct.value = 0; spinDiscountPct.value = 0; spinBonusExpiry.value = null; customerTierName.value = "";
-  localStorage.removeItem("pos_draft_cart"); localStorage.removeItem("pos_draft_customer");
+  localStorage.removeItem('pos_draft');
+  showDraftPrompt.value = false;
 }
 async function fetchAvailablePromos(customer) {
   promosLoading.value = true;
@@ -761,23 +836,244 @@ onUnmounted(() => window.removeEventListener("keydown", onKey));
 </script>
 
 <style scoped>
-.pos-container { height: 100vh; background: #f0f2f5; overflow: hidden; }
-.pos-main { padding: 15px; overflow-y: auto; }
-.pos-sidebar { height: 100vh; background: #fff; border-left: 1px solid #dcdfe6; position: relative; }
+.pos-container { height: 100%; min-height: 0; background: #f0f2f5; overflow: hidden; display: flex; }
+.pos-main { padding: 20px; overflow-y: auto; flex: 1; min-height: 0; }
+.pos-sidebar { height: 100%; background: #fff; border-left: 1px solid #dcdfe6; position: relative; flex-shrink: 0; }
 .main-content-wrapper { max-width: 1000px; margin: 0 auto; }
 .sidebar-wrapper { display: flex; flex-direction: column; height: 100%; }
 .sidebar-header { padding: 12px 15px; border-bottom: 1px solid #f0f0f0; background: #fafafa; }
-.cart-container { flex: 1; overflow-y: auto; padding: 0 5px; }
+.cart-container { flex: 1; overflow-y: auto; padding: 0; }
+
+/* ── Draft prompt ──────────────────────────────── */
+.draft-prompt {
+  margin: 10px 12px 0;
+  padding: 10px 12px;
+  background: #ecf5ff;
+  border: 1px solid #b3d8ff;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #409eff;
+}
+.draft-prompt-text {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.draft-prompt-actions { display: flex; gap: 6px; }
+
+/* ── Cart list ────────────────────────────────── */
+.cart-list { flex: 1; overflow-y: auto; padding: 8px 0; }
+.cart-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 40px 0;
+  color: #c0c4cc;
+  font-size: 13px;
+}
+.cart-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px;
+  border-bottom: 1px solid #f5f7fa;
+  gap: 8px;
+  transition: background 0.1s;
+}
+.cart-row:hover { background: #fafafa; }
+.cart-row:last-child { border-bottom: none; }
+.cart-row-info { flex: 1; min-width: 0; }
+.cart-row-name {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #303133;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cart-row-sub {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}
+.cart-row-variant {
+  font-size: 11px;
+  color: #909399;
+}
+.cart-row-serial {
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  color: #e6a23c;
+  font-weight: 600;
+}
+.cart-row-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.cart-row-price {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #303133;
+  white-space: nowrap;
+}
+.cart-remove-btn {
+  width: 20px;
+  height: 20px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: #c0c4cc;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.12s, color 0.12s;
+  padding: 0;
+}
+.cart-remove-btn:hover { background: #fef0f0; color: #f56c6c; }
 .sidebar-footer { padding: 15px; border-top: 1px solid #ebeef5; background: #fff; box-shadow: 0 -4px 10px rgba(0,0,0,0.03); }
+
+/* ── Product result card ─────────────────────────── */
+.product-result-card {
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.07);
+  overflow: hidden;
+}
+.prc-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: linear-gradient(90deg, #f0f7ff 0%, #fff 100%);
+  border-bottom: 1px solid #e8f0fe;
+}
+.prc-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1a1a2e;
+  letter-spacing: -0.01em;
+}
+
+/* ── Variant block ───────────────────────────────── */
+.variant-block {
+  padding: 14px 16px;
+  border-bottom: 1px solid #f2f3f5;
+}
+.variant-block:last-child { border-bottom: none; }
+
+.variant-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  gap: 8px;
+}
+.variant-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.variant-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: #606266;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.variant-price {
+  font-size: 17px;
+  font-weight: 800;
+  color: #f56c6c;
+  letter-spacing: -0.02em;
+}
+.variant-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* ── Serial filter row ───────────────────────────── */
+.serial-filter-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.serial-filter-wrap .el-input { flex: 1; }
+.serial-filter-hint {
+  font-size: 11px;
+  color: #909399;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Serial grid ─────────────────────────────────── */
+.serial-grid-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-height: 180px;
+  overflow-y: auto;
+  padding: 2px 0;
+}
+.serial-grid-wrap::-webkit-scrollbar { width: 4px; }
+.serial-grid-wrap::-webkit-scrollbar-thumb { background: #dcdfe6; border-radius: 4px; }
+
+.serial-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid #dcdfe6;
+  background: #fafafa;
+  color: #303133;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+  user-select: none;
+  white-space: nowrap;
+}
+.serial-pill:hover:not(:disabled) {
+  border-color: #409eff;
+  background: #ecf5ff;
+  color: #409eff;
+}
+.serial-pill.is-matched {
+  border-color: #e6a23c;
+  background: #fdf6ec;
+  color: #b76e00;
+}
+.serial-pill.is-matched:hover:not(:disabled) {
+  background: #faecd8;
+  border-color: #c87d00;
+}
+.serial-pill.is-in-cart {
+  border-color: #67c23a;
+  background: #f0f9eb;
+  color: #67c23a;
+  cursor: default;
+  opacity: 0.85;
+}
+.serial-pill:disabled { cursor: not-allowed; }
+.pill-icon { font-size: 10px; }
+.serial-empty { font-size: 12px; color: #909399; font-style: italic; align-self: center; }
 
 /* Compact Styles */
 .compact-table :deep(.el-table__cell) { padding: 4px 0; }
 .cart-item-info { display: flex; flex-direction: column; }
 .cart-item-price { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
-.variant-item-compact { padding: 8px 0; border-bottom: 1px dotted #ebeef5; }
-.variant-item-compact:last-child { border-bottom: none; }
-.serial-grid { display: flex; flex-wrap: wrap; gap: 6px; }
-.serial-btn { margin: 0 !important; font-family: monospace; font-size: 11px; }
 
 /* Zoning & Aesthetics */
 .card-header-compact { display: flex; justify-content: space-between; align-items: center; }
@@ -827,6 +1123,4 @@ onUnmounted(() => window.removeEventListener("keydown", onKey));
 .pval { font-size: 12px; font-weight: 600; color: #f56c6c; }
 .psave { font-size: 10px; color: #67c23a; margin-top: 2px; }
 .pexp { font-size: 10px; color: #909399; margin-top: 1px; }
-
-
 </style>

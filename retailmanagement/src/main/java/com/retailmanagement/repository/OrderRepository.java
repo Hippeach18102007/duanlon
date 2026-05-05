@@ -211,4 +211,32 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             @Param("upperBound")  Instant upperBound
     );
 
+    /**
+     * Tìm đơn OFFLINE đã qua 48h nhưng chưa đến 72h để gửi email nhắc nhở lần cuối.
+     */
+    @Query("""
+        SELECT o FROM Order o
+        WHERE o.channel = 'OFFLINE'
+          AND o.status IN ('PENDING', 'PROCESSING')
+          AND o.createdAt <= :warningCutoff
+          AND o.createdAt > :cancelCutoff
+    """)
+    List<Order> findOfflineOrdersToWarn(
+            @Param("warningCutoff") Instant warningCutoff,
+            @Param("cancelCutoff") Instant cancelCutoff
+    );
+
+    /**
+     * Tìm đơn OFFLINE đã qua 72h để tự động hủy đơn và xả kho.
+     */
+    @Query("""
+        SELECT o FROM Order o
+        WHERE o.channel = 'OFFLINE'
+          AND o.status IN ('PENDING', 'PROCESSING')
+          AND o.createdAt <= :cancelCutoff
+    """)
+    List<Order> findOfflineOrdersToCancel(
+            @Param("cancelCutoff") Instant cancelCutoff
+    );
+
 }

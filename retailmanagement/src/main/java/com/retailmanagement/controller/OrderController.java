@@ -10,6 +10,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.http.MediaType;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -129,6 +131,18 @@ public class OrderController {
     public ResponseEntity<Void> markAsDelivered(@PathVariable Long orderId) {
         orderService.markAsDelivered(orderId);
         return ResponseEntity.ok().build();
+    }
+
+    // SHIPPER UPLOAD PROOF
+    @PutMapping(value = "/public/{orderId}/upload-proof", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<Map<String, Object>> uploadDeliveryProof(
+            @PathVariable Long orderId,
+            @RequestPart("image") MultipartFile image) {
+
+        orderService.uploadDeliveryProof(orderId, image);
+        return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "Đã cập nhật ảnh bằng chứng giao hàng"));
     }
 
     // CANCEL ORDER

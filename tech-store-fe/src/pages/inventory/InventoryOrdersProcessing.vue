@@ -102,16 +102,6 @@
           </template>
         </el-table-column>
 
-        <!-- Customer -->
-        <el-table-column prop="customerName" label="Khách hàng" min-width="160">
-          <template #default="{ row }">
-            <el-space>
-              <el-avatar :size="28">{{ initials(row.customerName) }}</el-avatar>
-              <el-text>{{ row.customerName }}</el-text>
-            </el-space>
-          </template>
-        </el-table-column>
-
         <!-- Amount -->
         <el-table-column label="Giá trị" min-width="130" align="right">
           <template #default="{ row }">

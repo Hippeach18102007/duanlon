@@ -113,7 +113,8 @@
     <div v-if="topProducts.length > 0" style="margin-bottom: 32px;">
       <el-row align="middle" justify="space-between" style="margin-bottom: 14px;">
         <el-space :size="8" align="center">
-          <el-text tag="b" style="font-size: 15px; letter-spacing: -0.01em;">🔥 Bán chạy nhất</el-text>
+          <el-icon style="color: var(--el-color-warning); font-size: 16px; vertical-align: middle; margin-right: 4px;"><StarFilled /></el-icon>
+          <el-text tag="b" style="font-size: 15px; letter-spacing: -0.01em;">Được yêu thích nhất</el-text>
         </el-space>
         <el-text size="small" type="info">Được yêu thích nhiều nhất</el-text>
       </el-row>
@@ -162,17 +163,14 @@
     <div class="ch-layout">
 
       <aside class="ch-sidebar">
-        <div style="position: sticky; top: 24px; display: flex; flex-direction: column; gap: 16px; max-height: calc(100vh - 48px); overflow-y: auto; padding-bottom: 20px;">
-          
+        <div class="sidebar-sticky">
           <el-button v-if="hasActiveFilters" type="danger" plain size="small" @click="resetFilters">
             Xóa tất cả bộ lọc
           </el-button>
 
           <el-card shadow="never">
             <template #header>
-              <el-row justify="space-between" align="middle">
-                <el-text size="small" style="text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600;">Danh mục</el-text>
-              </el-row>
+              <el-text size="small" style="text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600;">Danh mục</el-text>
             </template>
             <el-select v-model="activeKey" style="width: 100%;" @change="onSelectCategory" placeholder="Chọn danh mục">
               <el-option label="Tất cả" value="all" />
@@ -200,7 +198,6 @@
               <el-button type="primary" plain size="small" style="width: 100%;" @click="applyPriceFilter">Áp dụng giá</el-button>
             </div>
           </el-card>
-
         </div>
       </aside>
 
@@ -313,12 +310,13 @@
     </div>
 
     <AiChatWidget />
+
   </div>
  <Footerapp />
 </template>
 
 <script setup>
-import { Refresh, ShoppingCart } from "@element-plus/icons-vue";
+import { Refresh, ShoppingCart, StarFilled } from "@element-plus/icons-vue";
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { categoriesApi } from "../../api/categories.api";
 import AiChatWidget from '../../components/Aichatwidget.vue';
@@ -629,7 +627,7 @@ onMounted(async () => {
 .ch-wrap {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 28px 24px 60px;
+  padding: 28px 24px 24px;
 }
 
 /* ── Top Selling Horizontal Scroll ─────────────────── */
@@ -660,6 +658,18 @@ onMounted(async () => {
 @media (max-width: 900px) {
   .ch-layout { grid-template-columns: 1fr; }
   .ch-sidebar { display: none; }
+}
+
+/* Sticky sidebar: constrained by parent grid cell → không đè footer */
+.sidebar-sticky {
+  position: sticky;
+  top: 80px; /* 72px header + 8px gap */
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-height: calc(100vh - 100px);
+  overflow-y: auto;
+  padding-bottom: 16px;
 }
 
 /* ── Product Image ─────────────────────────────────── */
@@ -749,4 +759,5 @@ onMounted(async () => {
   margin-right: 0 !important;
   margin-bottom: 4px;
 }
+
 </style>

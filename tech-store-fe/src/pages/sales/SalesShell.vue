@@ -126,7 +126,7 @@
     <!-- ═══════════════════════════════════
          MAIN CONTENT
     ═══════════════════════════════════ -->
-    <el-main :style="`margin-left: 256px; min-height: 100vh; overflow: auto; padding: ${mainPadding};`">
+    <el-main :style="mainStyle">
       <router-view />
     </el-main>
 
@@ -145,7 +145,17 @@ const route = useRoute();
 const router = useRouter();
 const auth = useAuthStore();
 
-const mainPadding = computed(() => route.name === "sales-pos" ? "0" : "32px 40px 60px");
+// Routes không có padding để page con tự fill full height
+const FULL_HEIGHT_ROUTES = ['sales-pos', 'sales-pickup', 'sales-customers'];
+const mainStyle = computed(() => {
+  const full = FULL_HEIGHT_ROUTES.includes(route.name);
+  return {
+    marginLeft: '256px',
+    height: '100%',
+    overflow: full ? 'hidden' : 'auto',
+    padding: full ? '0' : '32px 40px 60px',
+  };
+});
 
 function initials(name = "") {
   return (

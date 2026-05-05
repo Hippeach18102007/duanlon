@@ -10,8 +10,10 @@ import com.retailmanagement.dto.request.CreateOrderRequest;
 import com.retailmanagement.dto.request.UpdateOrderRequest;
 import com.retailmanagement.dto.response.BestVoucherSuggestion;
 import com.retailmanagement.dto.response.CreateOrderResponse;
+import com.retailmanagement.dto.response.DeliveryInfoResponse;
 import com.retailmanagement.dto.response.OrderDetailResponse;
 import com.retailmanagement.entity.*;
+import com.retailmanagement.entity.NotificationType;
 import com.retailmanagement.repository.*;
 import com.retailmanagement.security.log.ActionType;
 import com.retailmanagement.security.log.SensitiveOperation;
@@ -20,6 +22,7 @@ import com.retailmanagement.security.service.CustomUserDetails;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -66,6 +69,8 @@ public class OrderService {
     private final LoyaltyResetService loyaltyResetService;
     private final PromotionRepository promotionRepository;
     private final PromotionService promotionService;
+    private final NotificationService notificationService;
+    private final CloudinaryService cloudinaryService;
 
     private String generateOrderNumber() {
         LocalDate today = LocalDate.now();
@@ -222,7 +227,15 @@ public class OrderService {
         order.setShippingFee(BigDecimal.ZERO);
         order.setTotalAmount(BigDecimal.ZERO);
         order.setOrderNumber(generateOrderNumber());
-        order.setShippingAddress(customer.getAddress());
+        String finalAddress = (request.getShippingAddress() != null && !request.getShippingAddress().isBlank())
+                ? request.getShippingAddress()
+                : customer.getAddress();
+        order.setShippingAddress(finalAddress);
+        if ((customer.getAddress() == null || customer.getAddress().isBlank())
+                && finalAddress != null && !finalAddress.isBlank()) {
+            customer.setAddress(finalAddress);
+            customerRepository.save(customer);
+        }
         order.setCreatedAt(Instant.now());
         order.setUpdatedAt(Instant.now());
 
@@ -317,23 +330,7 @@ public class OrderService {
             orderItemRepository.save(item);
             System.out.println(">>> STEP 2: item saved, id=" + item.getId());
 
-            if ("OFFLINE".equals(request.getChannel())) {
-                List<ProductSerial> inStockSerials = productSerialRepository
-                        .findByVariantIdAndStatus(variant.getId(), "IN_STOCK");
-                if (inStockSerials.size() < itemReq.getQuantity()) {
-                    throw new RuntimeException("Không đủ serial IN_STOCK cho: " + variant.getVariantName());
-                }
-                for (int i = 0; i < itemReq.getQuantity(); i++) {
-                    ProductSerial serial = inStockSerials.get(i);
-                    serial.setStatus("SOLD");
-                    productSerialRepository.save(serial);
-
-                    OrderItemSerial ois = new OrderItemSerial();
-                    ois.setOrderItem(item);
-                    ois.setProductSerial(serial);
-                    orderItemSerialRepository.save(ois);
-                }
-            }
+            // Removed auto-assign serials for OFFLINE orders; serials will be assigned manually later.
 
             variant.setReservedQty(variant.getReservedQty() + itemReq.getQuantity());
             variantRepository.save(variant);
@@ -607,7 +604,7 @@ public class OrderService {
                 order.getCustomer().getName(),
                 order.getCustomer().getEmail(),
                 order.getCustomer().getPhone(),
-                order.getCustomer().getAddress(),
+                (order.getShippingAddress() != null && !order.getShippingAddress().isBlank()) ? order.getShippingAddress() : order.getCustomer().getAddress(),
                 order.getUser().getId(),
                 order.getUser().getUsername(),
                 order.getNotes(),
@@ -616,10 +613,14 @@ public class OrderService {
                 order.getTaxTotal(),
                 order.getShippingFee(),
                 order.getTotalAmount(),
+                order.getDeliveryProofUrl(),
+                order.getShipperConfirmedAt(),
                 order.getCreatedAt(),
                 order.getDeliveredAt(),
                 order.getCancelledAt(),
                 order.getPaidAt(),
+                order.getShippedAt(),
+                order.getUpdatedAt(),
                 items,
                 order.getAppliedPromotionCode(),
                 order.getAppliedPromotionJson());
@@ -629,8 +630,10 @@ public class OrderService {
     public void markAsProcessing(Long orderId) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
-        if (!OrderStatuses.PAID.equals(order.getStatus())) {
-            throw new IllegalStateException("Only PAID orders can be processed");
+        String channel = order.getChannel();
+        if ("ONLINE".equalsIgnoreCase(channel)
+                && !OrderStatuses.PAID.equals(order.getStatus())) {
+            throw new IllegalStateException("Only PAID ONLINE orders can be processed");
         }
 
         if (!"OFFLINE".equals(order.getChannel())) {
@@ -654,11 +657,19 @@ public class OrderService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
         if (!OrderStatuses.PROCESSING.equals(order.getStatus())) {
-            throw new IllegalStateException("Only PAID orders can be processed");
+            throw new IllegalStateException("Only PROCESSING orders can be processed");
         }
         order.setStatus(OrderStatuses.SHIPPING);
         order.setUpdatedAt(Instant.now());
+        order.setShippedAt(Instant.now());
         orderRepository.save(order);
+
+        String channel = order.getChannel();
+        if ("ONLINE".equalsIgnoreCase(channel)) {
+            orderEmailService.sendShippingInProgressEmail(order);
+        } else if ("OFFLINE".equalsIgnoreCase(channel)) {
+            orderEmailService.sendReadyForPickupEmail(order);
+        }
     }
 
     @Transactional
@@ -754,8 +765,13 @@ public class OrderService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
 
-        if (!OrderStatuses.PAID.equals(order.getStatus())) {
-            throw new RuntimeException("Chỉ được gán serial cho đơn hàng đã thanh toán (PAID)");
+        boolean isPaidOrder = OrderStatuses.PAID.equals(order.getStatus());
+        boolean isCashOrder = "CASH".equalsIgnoreCase(order.getPaymentMethod());
+        boolean isOnlineOrOffline = "ONLINE".equalsIgnoreCase(order.getChannel())
+                || "OFFLINE".equalsIgnoreCase(order.getChannel());
+
+        if (!isPaidOrder && !(isCashOrder && isOnlineOrOffline)) {
+            throw new RuntimeException("Chỉ được gán serial cho đơn PAID hoặc đơn CASH (ONLINE/OFFLINE)");
         }
 
         OrderItem orderItem = orderItemRepository.findById(itemId)
@@ -800,6 +816,7 @@ public class OrderService {
         OrderItemSerial ois = new OrderItemSerial();
         ois.setOrderItem(orderItem);
         ois.setProductSerial(serial);
+        ois.setReturned(false);
         orderItemSerialRepository.save(ois);
     }
 
@@ -808,8 +825,13 @@ public class OrderService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
 
-        if (!OrderStatuses.PAID.equals(order.getStatus())) {
-            throw new RuntimeException("Chỉ được xóa serial khi đơn hàng ở trạng thái PAID");
+        boolean isPaidOrder = OrderStatuses.PAID.equals(order.getStatus());
+        boolean isCashOrder = "CASH".equalsIgnoreCase(order.getPaymentMethod());
+        boolean isOnlineOrOffline = "ONLINE".equalsIgnoreCase(order.getChannel())
+                || "OFFLINE".equalsIgnoreCase(order.getChannel());
+
+        if (!isPaidOrder && !(isCashOrder && isOnlineOrOffline)) {
+            throw new RuntimeException("Chỉ được xóa serial cho đơn PAID hoặc đơn CASH (ONLINE/OFFLINE)");
         }
 
         OrderItem orderItem = orderItemRepository.findById(itemId)
@@ -837,6 +859,68 @@ public class OrderService {
                 .orElseThrow(() -> new RuntimeException("Customer not found"));
 
         return promotionService.suggestBestVouchers(customer, subtotal, 5);
+    }
+
+    @Transactional
+    public void uploadDeliveryProof(Long orderId, MultipartFile image) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found"));
+
+        if (image == null || image.isEmpty()) {
+            throw new RuntimeException("image không được rỗng");
+        }
+
+        String imageUrl;
+        try {
+            imageUrl = cloudinaryService.uploadFile(image);
+        } catch (java.io.IOException e) {
+            throw new RuntimeException("Lỗi upload ảnh: " + e.getMessage());
+        }
+
+        order.setDeliveryProofUrl(imageUrl);
+        order.setShipperConfirmedAt(Instant.now());
+        orderRepository.save(order);
+
+        Customer customer = order.getCustomer();
+        if (customer == null) {
+            return;
+        }
+
+        String message = "Đơn hàng #" + order.getOrderNumber() + " đã được giao tới. Vui lòng xác nhận!";
+        notificationService.createAndSaveNotification(
+                customer.getId(),
+                NotificationType.ORDER_STATUS,
+                "Đơn hàng đã giao",
+                message);
+
+        emailService.sendDeliveryProofEmail(order);
+    }
+
+    @Transactional
+    public DeliveryInfoResponse getDeliveryInfo(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found"));
+
+        if (!OrderStatuses.SHIPPING.equals(order.getStatus())) {
+            throw new RuntimeException("Order is not in SHIPPING status");
+        }
+
+        String address = order.getCustomer() != null ? order.getCustomer().getAddress() : null;
+        String customerName = order.getCustomer() != null ? order.getCustomer().getName() : null;
+        String customerPhone = order.getCustomer() != null ? order.getCustomer().getPhone() : null;
+
+        return DeliveryInfoResponse.builder()
+                .orderId(order.getId())
+                .orderNumber(order.getOrderNumber())
+                .status(order.getStatus())
+                .customerName(customerName)
+                .customerPhone(customerPhone)
+                .shippingAddress(order.getShippingAddress())
+                .deliveryProofUrl(order.getDeliveryProofUrl())
+                .shipperConfirmedAt(order.getShipperConfirmedAt())
+                .totalAmount(order.getTotalAmount())
+                .paymentMethod(order.getPaymentMethod())
+                .build();
     }
 
     private boolean isStoreFault(String reason) {

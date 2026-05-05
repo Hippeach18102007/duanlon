@@ -58,6 +58,54 @@ public class OrderEmailService {
         }
     }
 
+    @Async
+    public void sendShippingInProgressEmail(Order order) {
+        try {
+            if (order.getCustomer() == null
+                    || order.getCustomer().getEmail() == null) return;
+
+            String html = buildShippingInProgressEmail(order);
+
+            Resend resend = new Resend(apiKey);
+
+            CreateEmailOptions params = CreateEmailOptions.builder()
+                    .from("TechStore <noreply@nguyenduc.me>")
+                    .to(order.getCustomer().getEmail())
+                    .subject("Shipper dang giao don hang #" + order.getOrderNumber())
+                    .html(html)
+                    .build();
+
+            resend.emails().send(params);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Async
+    public void sendReadyForPickupEmail(Order order) {
+        try {
+            if (order.getCustomer() == null
+                    || order.getCustomer().getEmail() == null) return;
+
+            String html = buildReadyForPickupEmail(order);
+
+            Resend resend = new Resend(apiKey);
+
+            CreateEmailOptions params = CreateEmailOptions.builder()
+                    .from("TechStore <noreply@nguyenduc.me>")
+                    .to(order.getCustomer().getEmail())
+                    .subject("Don hang #" + order.getOrderNumber() + " san sang de nhan")
+                    .html(html)
+                    .build();
+
+            resend.emails().send(params);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────
     private String fmt(BigDecimal v) {
         if (v == null) return "0";
@@ -341,14 +389,184 @@ public class OrderEmailService {
         );
     }
 
+    private String buildShippingInProgressEmail(Order order) {
+        String customerName = safe(order.getCustomer().getName(), "Khach hang");
+        String orderNumber = order.getOrderNumber();
+        String address = safe(order.getShippingAddress(), safe(order.getCustomer().getAddress(), "—"));
+
+        String updatedAt = order.getUpdatedAt() != null
+                ? order.getUpdatedAt().atZone(ZoneId.of("Asia/Ho_Chi_Minh"))
+                .format(DateTimeFormatter.ofPattern("HH:mm, dd/MM/yyyy"))
+                : "—";
+
+        return """
+        <!DOCTYPE html>
+        <html lang="vi">
+        <head>
+          <meta charset="UTF-8"/>
+          <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+          <title>Shipper dang giao</title>
+        </head>
+        <body style="margin:0;padding:0;background:#f2f2f2;font-family:Arial,Helvetica,sans-serif;">
+          <table width="100%%" cellpadding="0" cellspacing="0" style="background:#f2f2f2;padding:30px 0;">
+            <tr><td align="center">
+              <table width="600" cellpadding="0" cellspacing="0"
+                     style="max-width:600px;width:100%%;background:#ffffff;border:1px solid #cccccc;">
+
+                <tr>
+                  <td style="background:#1a2744;padding:24px 32px;">
+                    <p style="margin:0;font-size:11px;letter-spacing:3px;color:#aabbd4;
+                               text-transform:uppercase;font-weight:bold;">TECHSTORE</p>
+                    <p style="margin:8px 0 0;font-size:18px;font-weight:bold;color:#ffffff;">
+                      Shipper dang giao don hang
+                    </p>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="background:#e8f4e8;border-bottom:1px solid #c3dcc3;padding:10px 32px;">
+                    <p style="margin:0;font-size:13px;color:#2a6e2a;font-weight:bold;">
+                      Dang giao — %s
+                    </p>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="padding:24px 32px 0;">
+                    <p style="margin:0;font-size:14px;color:#333;">Xin chao <strong>%s</strong>,</p>
+                    <p style="margin:10px 0 0;font-size:13px;color:#555;line-height:1.6;">
+                      Don hang <strong>#%s</strong> dang duoc shipper giao den ban.
+                      Vui long giu dien thoai de nhan hang.
+                    </p>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="padding:16px 32px 0;">
+                    <table width="100%%" cellpadding="0" cellspacing="0"
+                           style="border:1px solid #ddd;border-collapse:collapse;">
+                      <tr>
+                        <td style="padding:7px 12px;font-size:13px;color:#666;background:#fafafa;
+                                    border-right:1px solid #eee;width:40%%;">Dia chi giao hang</td>
+                        <td style="padding:7px 12px;font-size:13px;color:#222;">%s</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="padding:24px 32px 28px;text-align:center;">
+                    <p style="margin:0;font-size:12px;color:#999;line-height:1.7;">
+                      Neu can ho tro, vui long lien he
+                      <a href="mailto:support@nguyenduc.me" style="color:#1a2744;text-decoration:underline;">
+                        support@nguyenduc.me
+                      </a>
+                    </p>
+                  </td>
+                </tr>
+
+              </table>
+            </td></tr>
+          </table>
+        </body>
+        </html>
+        """.formatted(updatedAt, customerName, orderNumber, address);
+    }
+
+    private String buildReadyForPickupEmail(Order order) {
+        String customerName = safe(order.getCustomer().getName(), "Khach hang");
+        String orderNumber = order.getOrderNumber();
+        String pickupAddress = "So 605 Kim Nguu, Ha Noi";
+
+        String updatedAt = order.getUpdatedAt() != null
+                ? order.getUpdatedAt().atZone(ZoneId.of("Asia/Ho_Chi_Minh"))
+                .format(DateTimeFormatter.ofPattern("HH:mm, dd/MM/yyyy"))
+                : "—";
+
+        return """
+        <!DOCTYPE html>
+        <html lang="vi">
+        <head>
+          <meta charset="UTF-8"/>
+          <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+          <title>San sang nhan hang</title>
+        </head>
+        <body style="margin:0;padding:0;background:#f2f2f2;font-family:Arial,Helvetica,sans-serif;">
+          <table width="100%%" cellpadding="0" cellspacing="0" style="background:#f2f2f2;padding:30px 0;">
+            <tr><td align="center">
+              <table width="600" cellpadding="0" cellspacing="0"
+                     style="max-width:600px;width:100%%;background:#ffffff;border:1px solid #cccccc;">
+
+                <tr>
+                  <td style="background:#1a2744;padding:24px 32px;">
+                    <p style="margin:0;font-size:11px;letter-spacing:3px;color:#aabbd4;
+                               text-transform:uppercase;font-weight:bold;">TECHSTORE</p>
+                    <p style="margin:8px 0 0;font-size:18px;font-weight:bold;color:#ffffff;">
+                      Don hang san sang de nhan
+                    </p>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="background:#e8f4e8;border-bottom:1px solid #c3dcc3;padding:10px 32px;">
+                    <p style="margin:0;font-size:13px;color:#2a6e2a;font-weight:bold;">
+                      Da chuan bi xong — %s
+                    </p>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="padding:24px 32px 0;">
+                    <p style="margin:0;font-size:14px;color:#333;">Xin chao <strong>%s</strong>,</p>
+                    <p style="margin:10px 0 0;font-size:13px;color:#555;line-height:1.6;">
+                      Don hang <strong>#%s</strong> da duoc chuan bi xong.
+                      Vui long toi cua hang de nhan hang.
+                    </p>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="padding:16px 32px 0;">
+                    <table width="100%%" cellpadding="0" cellspacing="0"
+                           style="border:1px solid #ddd;border-collapse:collapse;">
+                      <tr>
+                        <td style="padding:7px 12px;font-size:13px;color:#666;background:#fafafa;
+                                    border-right:1px solid #eee;width:40%%;">Dia chi nhan hang</td>
+                        <td style="padding:7px 12px;font-size:13px;color:#222;">%s</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="padding:24px 32px 28px;text-align:center;">
+                    <p style="margin:0;font-size:12px;color:#999;line-height:1.7;">
+                      Neu can ho tro, vui long lien he
+                      <a href="mailto:support@nguyenduc.me" style="color:#1a2744;text-decoration:underline;">
+                        support@nguyenduc.me
+                      </a>
+                    </p>
+                  </td>
+                </tr>
+
+              </table>
+            </td></tr>
+          </table>
+        </body>
+        </html>
+        """.formatted(updatedAt, customerName, orderNumber, pickupAddress);
+    }
+
     @Async
     public void sendAutoCompleteWarningEmail(Order order, int daysRemaining) {
         try {
-            if (order.getCustomer() == null
-                    || order.getCustomer().getEmail() == null) return;
+            if (order.getCustomer() == null || order.getCustomer().getEmail() == null) return;
 
-            String customerName = safe(order.getCustomer().getName(), "Khach hang");
+            String customerName = safe(order.getCustomer().getName(), "Khách hàng");
             String orderNumber  = order.getOrderNumber();
+
+            // Đường link URL gọi thẳng về Frontend của mày kèm theo biến action
+            String frontendUrl = "http://localhost:5173/orders/" + order.getId() + "?action=confirm_delivered";
 
             String html = """
             <!DOCTYPE html>
@@ -356,86 +574,61 @@ public class OrderEmailService {
             <head>
               <meta charset="UTF-8"/>
               <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-              <title>Xac nhan don hang</title>
+              <title>Xác nhận đơn hàng</title>
             </head>
-            <body style="margin:0;padding:0;background:#f2f2f2;
-                         font-family:Arial,Helvetica,sans-serif;">
-              <table width="100%%" cellpadding="0" cellspacing="0"
-                     style="background:#f2f2f2;padding:30px 0;">
+            <body style="margin:0;padding:0;background:#f2f2f2;font-family:Arial,Helvetica,sans-serif;">
+              <table width="100%%" cellpadding="0" cellspacing="0" style="background:#f2f2f2;padding:30px 0;">
                 <tr><td align="center">
-                  <table width="600" cellpadding="0" cellspacing="0"
-                         style="max-width:600px;width:100%%;background:#ffffff;
-                                border:1px solid #cccccc;">
+                  <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%%;background:#ffffff;border:1px solid #cccccc;">
  
                     <!-- HEADER -->
                     <tr>
                       <td style="background:#1a2744;padding:24px 32px;">
-                        <p style="margin:0;font-size:11px;letter-spacing:3px;
-                                   color:#aabbd4;text-transform:uppercase;">
-                          TECHSTORE
-                        </p>
-                        <p style="margin:6px 0 0;font-size:18px;font-weight:bold;
-                                   color:#ffffff;">
-                          Nhac nhan xac nhan don hang
-                        </p>
+                        <p style="margin:0;font-size:11px;letter-spacing:3px;color:#aabbd4;text-transform:uppercase;">TECHSTORE</p>
+                        <p style="margin:6px 0 0;font-size:18px;font-weight:bold;color:#ffffff;">Nhắc nhở xác nhận đơn hàng</p>
                       </td>
                     </tr>
  
                     <!-- BODY -->
                     <tr>
                       <td style="padding:28px 32px;">
-                        <p style="margin:0 0 12px;font-size:14px;color:#333;">
-                          Xin chao <strong>%s</strong>,
+                        <p style="margin:0 0 12px;font-size:14px;color:#333;">Xin chào <strong>%s</strong>,</p>
+                        <p style="margin:0 0 12px;font-size:13px;color:#555;line-height:1.7;">
+                          Đơn hàng <strong>#%s</strong> của bạn đã được vận chuyển và có thể đã đến nơi.<br/>
+                          Nếu bạn đã nhận được hàng, vui lòng xác nhận để chúng tôi hoàn tất đơn hàng.
                         </p>
-                        <p style="margin:0 0 12px;font-size:13px;color:#555;
-                                   line-height:1.7;">
-                          Don hang <strong>#%s</strong> cua ban da duoc van chuyen
-                          va co the da den noi.
-                          <br/>
-                          Neu ban da nhan duoc hang, vui long xac nhan de chung toi
-                          hoan tat don hang.
-                        </p>
+                        
+                        <!-- NÚT BẤM XÁC NHẬN -->
+                        <div style="text-align:center; margin: 28px 0;">
+                          <a href="%s" style="background-color:#2a6e2a; color:#ffffff; padding:14px 28px; font-size:14px; font-weight:bold; text-decoration:none; border-radius:6px; display:inline-block; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                            ✅ XÁC NHẬN ĐÃ NHẬN HÀNG
+                          </a>
+                        </div>
  
                         <!-- Warning box -->
-                        <table cellpadding="0" cellspacing="0" width="100%%"
-                               style="border:1px solid #f5c518;background:#fffbea;
-                                      border-collapse:collapse;margin:16px 0;">
+                        <table cellpadding="0" cellspacing="0" width="100%%" style="border:1px solid #f5c518;background:#fffbea;border-collapse:collapse;margin:16px 0;">
                           <tr>
                             <td style="padding:14px 16px;">
                               <p style="margin:0;font-size:13px;color:#7a5800;">
-                                Neu khong co xac nhan trong vong
-                                <strong>1 ngay</strong>,
-                                don hang se tu dong chuyen sang trang thai
-                                <strong>Da giao</strong>.
+                                Nếu không có xác nhận trong vòng <strong>1 ngày</strong>, đơn hàng sẽ tự động chuyển sang trạng thái <strong>Đã giao</strong>.
                               </p>
                             </td>
                           </tr>
                         </table>
  
-                        <p style="margin:0;font-size:13px;color:#555;">
-                          Cam on ban da mua sam tai TechStore.
-                        </p>
+                        <p style="margin:0;font-size:13px;color:#555;">Cảm ơn bạn đã mua sắm tại TechStore.</p>
                       </td>
                     </tr>
  
                     <!-- FOOTER -->
                     <tr>
-                      <td style="padding:18px 32px 28px;text-align:center;
-                                  border-top:1px solid #ddd;">
-                        <p style="margin:0 0 4px;font-size:12px;
-                                   font-weight:bold;color:#555;">TechStore</p>
-                        <p style="margin:0;font-size:12px;color:#999;
-                                   line-height:1.7;">
-                          Lien he ho tro:
-                          <a href="mailto:support@nguyenduc.me"
-                             style="color:#1a2744;text-decoration:underline;">
-                            support@nguyenduc.me
-                          </a><br/>
-                          Email nay duoc gui tu dong, vui long khong tra loi.
+                      <td style="padding:18px 32px 28px;text-align:center;border-top:1px solid #ddd;">
+                        <p style="margin:0 0 4px;font-size:12px;font-weight:bold;color:#555;">TechStore</p>
+                        <p style="margin:0;font-size:12px;color:#999;line-height:1.7;">
+                          Liên hệ hỗ trợ: <a href="mailto:support@nguyenduc.me" style="color:#1a2744;text-decoration:underline;">support@nguyenduc.me</a><br/>
+                          Email này được gửi tự động, vui lòng không trả lời.
                         </p>
-                        <p style="margin:12px 0 0;font-size:11px;color:#bbb;">
-                          (c) 2025 TechStore. All rights reserved.
-                        </p>
+                        <p style="margin:12px 0 0;font-size:11px;color:#bbb;">(c) 2026 TechStore. All rights reserved.</p>
                       </td>
                     </tr>
  
@@ -444,14 +637,14 @@ public class OrderEmailService {
               </table>
             </body>
             </html>
-            """.formatted(customerName, orderNumber);
+            """.formatted(customerName, orderNumber, frontendUrl);
 
             Resend resend = new Resend(apiKey);
 
             CreateEmailOptions params = CreateEmailOptions.builder()
                     .from("TechStore <noreply@nguyenduc.me>")
                     .to(order.getCustomer().getEmail())
-                    .subject("Xac nhan don hang #" + orderNumber + " truoc khi tu dong hoan tat")
+                    .subject("Xác nhận đơn hàng #" + orderNumber + " trước khi tự động hoàn tất")
                     .html(html)
                     .build();
 
@@ -460,5 +653,111 @@ public class OrderEmailService {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    @Async
+    public void sendOfflinePickupReminderEmail(Order order) {
+        try {
+            if (order.getCustomer() == null || order.getCustomer().getEmail() == null) return;
+
+            String customerName = safe(order.getCustomer().getName(), "Khách hàng");
+            String orderNumber  = order.getOrderNumber();
+
+            String html = """
+            <!DOCTYPE html>
+            <html lang="vi">
+            <head><meta charset="UTF-8"/></head>
+            <body style="margin:0;padding:0;background:#f2f2f2;font-family:Arial,sans-serif;">
+              <table width="100%%" cellpadding="0" cellspacing="0" style="padding:30px 0;">
+                <tr><td align="center">
+                  <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border:1px solid #cccccc;">
+                    <tr>
+                      <td style="background:#1a2744;padding:24px 32px;">
+                        <p style="margin:0;font-size:11px;color:#aabbd4;text-transform:uppercase;">TECHSTORE</p>
+                        <p style="margin:6px 0 0;font-size:18px;font-weight:bold;color:#ffffff;">Nhắc nhở nhận đơn hàng tại cửa hàng</p>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:28px 32px;">
+                        <p style="font-size:14px;color:#333;">Xin chào <strong>%s</strong>,</p>
+                        <p style="font-size:13px;color:#555;">Đơn hàng <strong>#%s</strong> của bạn đã sẵn sàng tại cửa hàng TechStore.</p>
+                        <table cellpadding="0" cellspacing="0" width="100%%" style="border:1px solid #f5c518;background:#fffbea;margin:16px 0;">
+                          <tr>
+                            <td style="padding:14px 16px;">
+                              <p style="margin:0;font-size:13px;color:#7a5800;">
+                                ⚠️ Vui lòng đến nhận hàng trong vòng <strong>24 giờ tới</strong>.<br/>
+                                Nếu quá thời hạn, hệ thống sẽ tự động huỷ đơn hàng của bạn.
+                              </p>
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
+                  </table>
+                </td></tr>
+              </table>
+            </body>
+            </html>
+            """.formatted(customerName, orderNumber);
+
+            Resend resend = new Resend(apiKey);
+            CreateEmailOptions params = CreateEmailOptions.builder()
+                    .from("TechStore <noreply@nguyenduc.me>")
+                    .to(order.getCustomer().getEmail())
+                    .subject("Nhắc nhở nhận đơn hàng #" + orderNumber)
+                    .html(html)
+                    .build();
+            resend.emails().send(params);
+        } catch (Exception e) { e.printStackTrace(); }
+    }
+
+    @Async
+    public void sendOfflineAutoCancelEmail(Order order) {
+        try {
+            if (order.getCustomer() == null || order.getCustomer().getEmail() == null) return;
+
+            String customerName = safe(order.getCustomer().getName(), "Khách hàng");
+            String orderNumber  = order.getOrderNumber();
+            String refundNote = "PAID".equals(order.getPaymentStatus())
+                    ? "Tiền thanh toán sẽ được hệ thống đối soát và hoàn lại vào điểm tích luỹ (Loyalty Points) của bạn trong 24h tới."
+                    : "Đơn hàng chưa thanh toán đã được huỷ thành công.";
+
+            String html = """
+            <!DOCTYPE html>
+            <html lang="vi">
+            <head><meta charset="UTF-8"/></head>
+            <body style="margin:0;padding:0;background:#f2f2f2;font-family:Arial,sans-serif;">
+              <table width="100%%" cellpadding="0" cellspacing="0" style="padding:30px 0;">
+                <tr><td align="center">
+                  <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border:1px solid #cccccc;">
+                    <tr>
+                      <td style="background:#c62828;padding:24px 32px;">
+                        <p style="margin:0;font-size:11px;color:#ffcdd2;text-transform:uppercase;">TECHSTORE</p>
+                        <p style="margin:6px 0 0;font-size:18px;font-weight:bold;color:#ffffff;">Đơn hàng đã bị huỷ</p>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:28px 32px;">
+                        <p style="font-size:14px;color:#333;">Xin chào <strong>%s</strong>,</p>
+                        <p style="font-size:13px;color:#555;">Đơn hàng <strong>#%s</strong> của bạn đã bị huỷ do quá hạn 3 ngày nhận hàng tại cửa hàng.</p>
+                        <p style="font-size:13px;color:#c62828;font-weight:bold;">%s</p>
+                      </td>
+                    </tr>
+                  </table>
+                </td></tr>
+              </table>
+            </body>
+            </html>
+            """.formatted(customerName, orderNumber, refundNote);
+
+            Resend resend = new Resend(apiKey);
+            CreateEmailOptions params = CreateEmailOptions.builder()
+                    .from("TechStore <noreply@nguyenduc.me>")
+                    .to(order.getCustomer().getEmail())
+                    .subject("Đơn hàng #" + orderNumber + " đã bị huỷ")
+                    .html(html)
+                    .build();
+            resend.emails().send(params);
+        } catch (Exception e) { e.printStackTrace(); }
     }
 }

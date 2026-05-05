@@ -13,13 +13,17 @@
           <el-col :xs="24" :sm="14">
             <el-space direction="vertical" :size="16" alignment="flex-start">
               <el-tag :type="slide.tagType" effect="plain" size="default">
-                {{ slide.tagLabel }}
+                <span style="display: inline-flex; align-items: center; gap: 4px;">
+                  <el-icon><component :is="slide.tagIcon" /></el-icon>
+                  {{ slide.tagLabel }}
+                </span>
               </el-tag>
               <span style="font-size: clamp(20px, 2.8vw, 32px); font-weight: 800; color: #f8fafc; line-height: 1.2; display: block;">
                 {{ slide.title }}
               </span>
               <el-button type="primary" size="large" color="#6366f1" @click="goToProduct(slide.productId)">
-                Xem thêm →
+                Xem thêm
+                <el-icon class="el-icon--right"><ArrowRight /></el-icon>
               </el-button>
             </el-space>
           </el-col>
@@ -42,6 +46,7 @@
 import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { productsApi } from "../api/products.api";
+import { Promotion, Goods, ArrowRight } from "@element-plus/icons-vue";
 
 const router = useRouter();
 const slides = ref([]);
@@ -60,7 +65,8 @@ function buildSlide(product, tagKey, index) {
   return {
     productId: product.id,
     title: product.name,
-    tagLabel: isBestseller ? "🔥 BÁN CHẠY NHẤT" : "✨ HÀNG MỚI VỀ",
+    tagLabel: isBestseller ? "BÁN CHẠY NHẤT" : "HÀNG MỚI VỀ",
+    tagIcon: isBestseller ? Promotion : Goods,
     tagType: isBestseller ? "warning" : "success",
     bg: BG_COLORS[index % BG_COLORS.length],
     img: fixImageUrl(product.imageUrl || product.thumbnailUrl),

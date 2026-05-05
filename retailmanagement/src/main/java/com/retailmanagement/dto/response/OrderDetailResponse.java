@@ -47,10 +47,16 @@ public class OrderDetailResponse {
     private BigDecimal shippingFee;
     private BigDecimal totalAmount;
 
+    private String deliveryProofUrl;
+    private Instant shipperConfirmedAt;
+
     private Instant createdAt;
     private Instant deliveredAt;
     private Instant cancelledAt;
     private Instant paidAt;
+
+    private Instant shippedAt;
+    private Instant updatedAt;
     private List<CreateOrderResponse.Item> items;
 
     public OrderDetailResponse(
@@ -73,10 +79,14 @@ public class OrderDetailResponse {
             BigDecimal taxTotal,
             BigDecimal shippingFee,
             BigDecimal totalAmount,
+            String deliveryProofUrl,
+            Instant shipperConfirmedAt,
             Instant createdAt,
             Instant deliveredAt,
             Instant cancelledAt,
             Instant paidAt,
+            Instant shippedAt,
+            Instant updatedAt,
             List<CreateOrderResponse.Item> items
     ) {
         this.orderId       = orderId;
@@ -98,10 +108,14 @@ public class OrderDetailResponse {
         this.taxTotal      = taxTotal;
         this.shippingFee   = shippingFee;
         this.totalAmount   = totalAmount;
+        this.deliveryProofUrl = deliveryProofUrl;
+        this.shipperConfirmedAt = shipperConfirmedAt;
         this.createdAt     = createdAt;
         this.deliveredAt    = deliveredAt;
         this.cancelledAt  = cancelledAt;
         this.paidAt      = paidAt;
+        this.shippedAt    = shippedAt;
+        this.updatedAt     = updatedAt;
         this.items         = items;
 
         parseDiscountFromNotes();
@@ -127,17 +141,21 @@ public class OrderDetailResponse {
             BigDecimal taxTotal,
             BigDecimal shippingFee,
             BigDecimal totalAmount,
+            String deliveryProofUrl,
+            Instant shipperConfirmedAt,
             Instant createdAt,
             Instant deliveredAt,
             Instant cancelledAt,
             Instant paidAt,
+            Instant shippedAt,
+            Instant updatedAt,
             List<CreateOrderResponse.Item> items,
             String promoCode,
             String appliedPromotionJson
     ) {
         this(orderId, orderNumber, channel, paymentMethod, status, paymentStatus,
                 customerId, customerName, customerAddress, customerPhone, customerEmail, staffId, staffUsername, notes,
-                subtotal, discountTotal, taxTotal, shippingFee, totalAmount, createdAt, deliveredAt, cancelledAt, paidAt, items);
+                subtotal, discountTotal, taxTotal, shippingFee, totalAmount, deliveryProofUrl, shipperConfirmedAt, createdAt, deliveredAt, cancelledAt, paidAt, shippedAt, updatedAt, items);
         this.promoCode = promoCode;
         this.comboInfo = parseComboInfo(appliedPromotionJson);
     }

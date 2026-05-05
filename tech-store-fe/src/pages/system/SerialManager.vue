@@ -36,17 +36,39 @@
       <!-- Filter -->
       <el-card shadow="never">
         <div style="display:flex; align-items:center; flex-wrap:wrap; gap:12px;">
+          <!-- Product dropdown -->
+          <el-select
+            v-model="filterProductId"
+            placeholder="Lọc theo sản phẩm…"
+            clearable
+            filterable
+            style="width:280px;"
+            :loading="productsLoading"
+            @change="page=1; load()"
+            @clear="page=1; load()"
+          >
+            <template #prefix><el-icon><Box /></el-icon></template>
+            <el-option
+              v-for="p in productOptions"
+              :key="p.value"
+              :label="p.label"
+              :value="p.value"
+            />
+          </el-select>
+
+          <!-- Serial / IMEI search -->
           <el-input
             v-model="keyword"
             placeholder="Số Seri / IMEI…"
             clearable
-            style="width:280px;"
+            style="width:240px;"
             @keyup.enter="load"
             @clear="clearFilters"
           >
             <template #prefix><el-icon><Search /></el-icon></template>
           </el-input>
 
+          <!-- Status filter -->
           <el-radio-group v-model="filterStatus" @change="page=1; load()">
             <el-radio-button v-for="opt in statusOptions" :key="opt.value" :value="opt.value">
               {{ opt.label }}
@@ -56,7 +78,7 @@
           <el-button
             link
             type="danger"
-            v-if="keyword || filterStatus"
+            v-if="filterProductId || keyword || filterStatus"
             @click="clearFilters"
           >Xóa bộ lọc</el-button>
         </div>
@@ -67,7 +89,10 @@
         <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 20px; border-bottom:1px solid var(--el-border-color-lighter); background:var(--el-fill-color-light);">
           <div style="display:flex; align-items:center; gap:8px; font-size:12.5px; font-weight:700; color:var(--el-text-color-secondary);">
             <el-icon><CreditCard /></el-icon>
-            Danh sách Số Seri (Đã gom nhóm theo Sản phẩm)
+            Danh sách Số Seri
+            <el-tag v-if="filterProductId" size="small" type="primary" closable @close="filterProductId=null; page=1; load()">
+              {{ productOptions.find(p => p.value === filterProductId)?.label }}
+            </el-tag>
             <el-tag v-if="filterStatus" size="small" closable @close="filterStatus=''; load()">
               {{ statusOptions.find(o => o.value === filterStatus)?.label }}
             </el-tag>
@@ -79,7 +104,7 @@
         </div>
 
         <el-table
-          :data="groupedRows"
+          :data="pagedGroupRows"
           v-loading="loading"
           row-key="key"
           stripe
@@ -177,19 +202,26 @@
           </el-table-column>
         </el-table>
 
-        <div v-if="total > 0" style="display:flex; align-items:center; justify-content:space-between; padding:12px 20px; border-top:1px solid var(--el-border-color-lighter); background:var(--el-fill-color-light); flex-wrap:wrap; gap:10px;">
+        <!-- Khi không lọc sản phẩm: phân trang theo nhóm sản phẩm -->
+        <div v-if="!filterProductId && groupedRows.length > 0" style="display:flex; align-items:center; justify-content:space-between; padding:12px 20px; border-top:1px solid var(--el-border-color-lighter); background:var(--el-fill-color-light); flex-wrap:wrap; gap:10px;">
           <span style="font-size:12.5px; color:var(--el-text-color-secondary);">
-            {{ (page - 1) * 20 + 1 }}–{{ Math.min(page * 20, total) }} / {{ total }}
+            Nhóm {{ (groupPage - 1) * GROUP_SIZE + 1 }}–{{ Math.min(groupPage * GROUP_SIZE, groupedRows.length) }}
+            <span style="color:var(--el-text-color-placeholder);"> / {{ groupedRows.length }} nhóm · {{ total }} seri</span>
           </span>
           <el-pagination
-            v-model:current-page="page"
-            :page-size="20"
-            :total="total"
+            v-model:current-page="groupPage"
+            :page-size="GROUP_SIZE"
+            :total="groupedRows.length"
             layout="prev, pager, next"
             background
             small
-            @current-change="load"
           />
+        </div>
+        <!-- Khi lọc theo sản phẩm: hiện tóm tắt -->
+        <div v-else-if="filterProductId && groupedRows.length > 0" style="padding:10px 20px; border-top:1px solid var(--el-border-color-lighter); background:var(--el-fill-color-light); font-size:12.5px; color:var(--el-text-color-secondary);">
+          <span style="font-weight:600;">{{ groupedRows.length }}</span> biến thể
+          <span style="margin:0 6px; color:var(--el-border-color);">·</span>
+          <span style="font-weight:600;">{{ rows.length }}</span> seri của sản phẩm này
         </div>
       </el-card>
 
@@ -198,9 +230,10 @@
 </template>
 
 <script setup>
-import { ChromeFilled, CopyDocument, CreditCard, Refresh, Search } from "@element-plus/icons-vue";
+import { Box, ChromeFilled, CopyDocument, CreditCard, Refresh, Search } from "@element-plus/icons-vue";
 import { ref, onMounted, computed } from 'vue';
 import { serialsApi } from '../../api/serials.api';
+import { productsApi } from '../../api/products.api';
 import { toast } from '../../ui/toast';
 
 const loading = ref(false);
@@ -209,6 +242,47 @@ const total   = ref(0);
 const page    = ref(1);
 const keyword = ref('');
 const filterStatus = ref('');
+const filterProductId = ref(null);
+
+// ── Products dropdown ────────────────────────────────────────
+const productsLoading = ref(false);
+const productOptions = ref([]);
+
+async function loadProducts() {
+  productsLoading.value = true;
+  try {
+    const PAGE_SIZE = 100;
+    // Lấy trang đầu để biết tổng số
+    const first = await productsApi.list({ page: 0, size: PAGE_SIZE });
+    const firstData = first.data?.data || first.data;
+    const totalElements = firstData?.totalElements ?? 0;
+    const totalPages    = firstData?.totalPages ?? Math.ceil(totalElements / PAGE_SIZE);
+    let allItems = [...(firstData?.content ?? [])];
+
+    // Fetch các trang còn lại song song
+    if (totalPages > 1) {
+      const rest = await Promise.all(
+        Array.from({ length: totalPages - 1 }, (_, i) =>
+          productsApi.list({ page: i + 1, size: PAGE_SIZE })
+        )
+      );
+      rest.forEach(r => {
+        const d = r.data?.data || r.data;
+        allItems = allItems.concat(d?.content ?? []);
+      });
+    }
+
+    productOptions.value = allItems.map(p => ({ value: p.id, label: p.name }));
+  } catch (e) {
+    console.error('Lỗi tải sản phẩm', e);
+  } finally {
+    productsLoading.value = false;
+  }
+}
+
+// ── Frontend group pagination ────────────────────────────────
+const GROUP_SIZE = 20;
+const groupPage  = ref(1);
 
 const globalInStock = ref(0);
 const globalSold    = ref(0);
@@ -229,9 +303,18 @@ const statusOptions = [
   { value: 'FAULTY',   label: 'Lỗi / Hỏng'},
 ];
 
+const selectedProductName = computed(() => {
+  if (!filterProductId.value) return null;
+  return productOptions.value.find(p => p.value === filterProductId.value)?.label ?? null;
+});
+
 const groupedRows = computed(() => {
   const map = {};
-  rows.value.forEach(row => {
+  const sourceRows = selectedProductName.value
+    ? rows.value.filter(row => row.productName === selectedProductName.value)
+    : rows.value;
+
+  sourceRows.forEach(row => {
     const key = `${row.productName} | ${row.variantName}`;
     if (!map[key]) {
       map[key] = { key, productName: row.productName, variantName: row.variantName, inStock: 0, sold: 0, faulty: 0, serials: [] };
@@ -242,6 +325,11 @@ const groupedRows = computed(() => {
     if (row.status === 'FAULTY')   map[key].faulty++;
   });
   return Object.values(map);
+});
+
+const pagedGroupRows = computed(() => {
+  const start = (groupPage.value - 1) * GROUP_SIZE;
+  return groupedRows.value.slice(start, start + GROUP_SIZE);
 });
 
 async function loadStats() {
@@ -261,12 +349,66 @@ async function loadStats() {
 async function load() {
   loading.value = true;
   try {
-    const res = await serialsApi.list({ page: page.value - 1, keyword: keyword.value, status: filterStatus.value || undefined });
-    const data = res.data?.data || res.data;
-    rows.value  = data.content;
-    total.value = data.totalElements;
+    if (filterProductId.value) {
+      // ── Chọn sản phẩm: dùng API hierarchy đúng ──────────────
+      // 1. Lấy danh sách biến thể của sản phẩm
+      const varRes  = await productsApi.getVariants(filterProductId.value);
+      const variants = varRes.data?.data ?? varRes.data ?? [];
+
+      const productName = productOptions.value.find(p => p.value === filterProductId.value)?.label ?? '';
+
+      // 2. Lấy serials song song cho từng biến thể
+      const varSerialResults = await Promise.all(
+        variants.map(v => productsApi.getSerials(v.id).then(r => ({ variant: v, serials: r.data?.data ?? r.data ?? [] })))
+      );
+
+      // 3. Gộp thành shape giống rows gốc
+      const allRows = [];
+      for (const { variant, serials } of varSerialResults) {
+        // filter theo status nếu đang chọn
+        const filtered = filterStatus.value
+          ? serials.filter(s => s.status === filterStatus.value)
+          : serials;
+        // filter theo keyword nếu có
+        const keywordLow = (keyword.value || '').toLowerCase();
+        for (const s of filtered) {
+          if (keywordLow && !s.serialNumber?.toLowerCase().includes(keywordLow)) continue;
+          allRows.push({
+            id:          s.id,
+            serialNumber: s.serialNumber,
+            status:      s.status,
+            productName,
+            variantName: variant.name ?? variant.variantName ?? '',
+          });
+        }
+      }
+
+      rows.value  = allRows;
+      total.value = allRows.length;
+    } else {
+      // ── Không lọc: load toàn bộ trang serial rồi phân trang nhóm ở frontend ──
+      const BATCH = 100;
+      const firstRes  = await serialsApi.list({ page: 0, size: BATCH, keyword: keyword.value || undefined, status: filterStatus.value || undefined });
+      const firstData = firstRes.data?.data || firstRes.data;
+      const totalElements = firstData?.totalElements ?? 0;
+      const totalPages    = firstData?.totalPages    ?? Math.ceil(totalElements / BATCH);
+      let allContent = [...(firstData?.content ?? [])];
+
+      if (totalPages > 1) {
+        const rest = await Promise.all(
+          Array.from({ length: totalPages - 1 }, (_, i) =>
+            serialsApi.list({ page: i + 1, size: BATCH, keyword: keyword.value || undefined, status: filterStatus.value || undefined })
+          )
+        );
+        rest.forEach(r => { const d = r.data?.data || r.data; allContent = allContent.concat(d?.content ?? []); });
+      }
+
+      rows.value  = allContent;
+      total.value = totalElements;
+    }
     loadStats();
-  } catch {
+  } catch (e) {
+    console.error(e);
     toast('Lỗi tải dữ liệu Seri', 'error');
   } finally {
     loading.value = false;
@@ -283,7 +425,7 @@ async function handleStatusUpdate(row, newStatus) {
   }
 }
 
-function clearFilters() { keyword.value = ''; filterStatus.value = ''; page.value = 1; load(); }
+function clearFilters() { keyword.value = ''; filterStatus.value = ''; filterProductId.value = null; page.value = 1; groupPage.value = 1; load(); }
 
 function copySerial(serial) {
   navigator.clipboard?.writeText(serial);
@@ -304,7 +446,7 @@ function statusActionOptions(currentStatus) {
   ].filter(o => o.value !== currentStatus);
 }
 
-onMounted(load);
+onMounted(() => { loadProducts(); load(); });
 </script>
 
 <style></style>

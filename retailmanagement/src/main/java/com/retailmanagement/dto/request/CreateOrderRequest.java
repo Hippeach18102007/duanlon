@@ -19,5 +19,6 @@ public class CreateOrderRequest {
     private Integer variantId;
     private Integer quantity;
     private List<String> serialNumbers;
+    private String shippingAddress;
 
 }

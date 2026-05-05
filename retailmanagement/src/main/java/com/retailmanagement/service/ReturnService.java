@@ -175,6 +175,9 @@ public class ReturnService {
         returnEntity.setProcessedBy(staffId);
         returnRepository.save(returnEntity);
 
+        order.setReturnedAt(Instant.now());
+        orderRepository.save(order);
+
         // xử lý serial theo loại refund
         switch (refundType) {
 
