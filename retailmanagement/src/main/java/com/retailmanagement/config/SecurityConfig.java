@@ -39,7 +39,7 @@ public class SecurityConfig {
     ) throws Exception {
         return configuration.getAuthenticationManager();
     }
-  
+
     @Bean
     public SecurityFilterChain filterChain(
             HttpSecurity http,
