@@ -20,6 +20,7 @@ public class VnPayService {
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
 
         String safeOrderNumber = order.getOrderNumber();
+        String txnRef = order.getId() + "-" + System.currentTimeMillis();
 
         Map<String, String> vnp_Params = new HashMap<>();
         vnp_Params.put("vnp_Version", "2.1.0");
@@ -29,7 +30,7 @@ public class VnPayService {
         // VNPAY yêu cầu số tiền nhân với 100
         vnp_Params.put("vnp_Amount", String.valueOf(order.getTotalAmount().longValue() * 100));
         vnp_Params.put("vnp_CurrCode", "VND");
-        vnp_Params.put("vnp_TxnRef", safeOrderNumber);
+        vnp_Params.put("vnp_TxnRef", txnRef);
         vnp_Params.put("vnp_OrderInfo", "TT_" + safeOrderNumber);
         vnp_Params.put("vnp_OrderType", "other");
         vnp_Params.put("vnp_Locale", "vn");
@@ -39,12 +40,12 @@ public class VnPayService {
         Calendar cld = Calendar.getInstance(TimeZone.getTimeZone("Asia/Ho_Chi_Minh"));
         SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMddHHmmss");
         formatter.setTimeZone(TimeZone.getTimeZone("Asia/Ho_Chi_Minh"));
+
         vnp_Params.put("vnp_CreateDate", formatter.format(cld.getTime()));
 
         cld.add(Calendar.MINUTE, 15);
         vnp_Params.put("vnp_ExpireDate", formatter.format(cld.getTime()));
 
-        // TẤT CẢ LOGIC SẮP XẾP, REPLACE "%20", VÀ ÉP IN HOA ĐÃ NẰM HẾT TRONG NÀY
         return VnPayConfig.buildPaymentUrl(vnp_Params);
     }
 }
