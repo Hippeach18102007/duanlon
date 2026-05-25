@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Value;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 /**
  * Tập trung xử lý thông báo cho khách hàng theo từng sự kiện.
@@ -38,6 +39,9 @@ import java.time.format.DateTimeFormatter;
 public class CustomerEventNotificationService {
 
     private final NotificationService notificationService;
+    private final CustomRes customerRepository;
+    private final UserRepository userRepository;
+    private final EmailService emailService;
 
     @Value("${resend.api.key}")
     private String apiKey;
@@ -90,6 +94,175 @@ public class CustomerEventNotificationService {
     }
 
     // ================================================================
+    // 1B. YÊU CẦU TRẢ HÀNG MỚI ĐƯỢC TẠO
+    // ================================================================
+
+    /**
+     * Gọi từ ReturnService sau khi tạo yêu cầu trả hàng thành công.
+     * Thông báo sẽ được gửi riêng cho khách hàng và admin (nếu có customer record)
+     * để cả hai bên đều có bản ghi trong DB.
+     */
+    @Transactional
+    public void onReturnCreated(Return returnRequest) {
+        if (returnRequest == null || returnRequest.getOrder() == null) return;
+
+        Order order = returnRequest.getOrder();
+        Customer customer = order.getCustomer();
+
+        String customerName = customer != null ? customer.getName() : "Khách hàng";
+        if (customer != null && customer.getId() != null) {
+            String customerTitle = "↩️ Yêu cầu trả hàng đã được tạo";
+            String customerMessage = String.format(
+                    "Yêu cầu trả hàng của đơn %s đã được ghi nhận và đang chờ xử lý.\n\n" +
+                            "🛍️ Sản phẩm: %s%s\n" +
+                            "📦 Số lượng: %,d\n" +
+                            "💰 Số tiền hoàn: %s VNĐ\n" +
+                            "📝 Lý do: %s\n" +
+                            "📅 Thời gian: %s",
+                    order.getOrderNumber(),
+                    returnRequest.getOrderItem() != null ? returnRequest.getOrderItem().getProductName() : "N/A",
+                    returnRequest.getOrderItem() != null && returnRequest.getOrderItem().getVariantName() != null
+                            ? " (" + returnRequest.getOrderItem().getVariantName() + ")"
+                            : "",
+                    returnRequest.getQuantity() != null ? returnRequest.getQuantity() : 0,
+                    formatMoney(returnRequest.getRefundAmount()),
+                    returnRequest.getReason() != null ? returnRequest.getReason() : "Không có lý do",
+                    LocalDateTime.now().format(DATE_FMT)
+            );
+
+            notificationService.createAndSaveNotification(
+                    customer.getId(),
+                    NotificationType.RETURN_REQUEST,
+                    customerTitle,
+                    customerMessage
+            );
+
+            if (customer.getEmail() != null && !customer.getEmail().isBlank()) {
+                sendSimpleEmail(
+                        customer.getEmail(),
+                        "Yêu cầu trả hàng đã được tạo - Đơn hàng " + order.getOrderNumber(),
+                        buildEmailBody(customerName, customerMessage)
+                );
+            }
+        }
+
+        String title = "↩️ Có yêu cầu trả hàng mới";
+        String message = String.format(
+                "Đơn hàng %s vừa được tạo yêu cầu trả hàng mới.\n\n" +
+                        "👤 Khách hàng: %s\n" +
+                        "🛍️ Sản phẩm: %s%s\n" +
+                        "📦 Số lượng: %,d\n" +
+                        "💰 Số tiền hoàn: %s VNĐ\n" +
+                        "📝 Lý do: %s\n" +
+                        "📅 Thời gian: %s",
+                order.getOrderNumber(),
+                customerName,
+                returnRequest.getOrderItem() != null ? returnRequest.getOrderItem().getProductName() : "N/A",
+                returnRequest.getOrderItem() != null && returnRequest.getOrderItem().getVariantName() != null
+                        ? " (" + returnRequest.getOrderItem().getVariantName() + ")"
+                        : "",
+                returnRequest.getQuantity() != null ? returnRequest.getQuantity() : 0,
+                formatMoney(returnRequest.getRefundAmount()),
+                returnRequest.getReason() != null ? returnRequest.getReason() : "Không có lý do",
+                LocalDateTime.now().format(DATE_FMT)
+        );
+
+        notifyAdminCustomers(title, message);
+        notifyAdminEmails(title, message);
+
+        log.info("✅ [RETURN_CREATED] Notified admins for return request #{}", returnRequest.getId());
+    }
+
+    /**
+     * Gọi sau khi admin duyệt hoàn trả thành công.
+     * Gửi notification riêng cho khách hàng và admin để cả hai bên đều có log trong DB.
+     */
+    @Transactional
+    public void onReturnApproved(Return returnRequest) {
+        if (returnRequest == null || returnRequest.getOrder() == null) return;
+
+        Order order = returnRequest.getOrder();
+        Customer customer = order.getCustomer();
+        String orderStatus = order.getStatus() != null ? order.getStatus() : "RETURNED";
+        boolean fullyReturned = "RETURNED".equals(orderStatus);
+        String refundDisplay = returnRequest.getRefundAmount() != null
+                ? formatMoney(returnRequest.getRefundAmount()) + " VNĐ"
+                : "đang được cập nhật";
+
+        String customerTitle = fullyReturned
+                ? "✅ Đơn hàng đã được hoàn trả"
+                : "✅ Đơn hàng đã được hoàn trả một phần";
+        String customerMessage = String.format(
+                "Yêu cầu trả hàng của đơn %s đã được admin duyệt và %s.\n\n" +
+                        "🛍️ Sản phẩm: %s%s\n" +
+                        "📦 Số lượng trả: %,d\n" +
+                        "💰 Số tiền hoàn: %s\n" +
+                        "📝 Ghi chú: %s\n" +
+                        "📅 Thời gian: %s",
+                order.getOrderNumber(),
+                fullyReturned ? "hoàn tất hoàn trả" : "hoàn trả một phần",
+                returnRequest.getOrderItem() != null ? returnRequest.getOrderItem().getProductName() : "N/A",
+                returnRequest.getOrderItem() != null && returnRequest.getOrderItem().getVariantName() != null
+                        ? " (" + returnRequest.getOrderItem().getVariantName() + ")"
+                        : "",
+                returnRequest.getQuantity() != null ? returnRequest.getQuantity() : 0,
+                refundDisplay,
+                returnRequest.getNote() != null && !returnRequest.getNote().isBlank()
+                        ? returnRequest.getNote()
+                        : "Không có ghi chú",
+                LocalDateTime.now().format(DATE_FMT)
+        );
+
+        if (customer != null && customer.getId() != null) {
+            notificationService.createAndSaveNotification(
+                    customer.getId(),
+                    NotificationType.RETURN_APPROVED,
+                    customerTitle,
+                    customerMessage
+            );
+
+            if (customer.getEmail() != null && !customer.getEmail().isBlank()) {
+                sendSimpleEmail(
+                        customer.getEmail(),
+                        "Đơn hàng đã được hoàn trả - " + order.getOrderNumber(),
+                        buildEmailBody(customer.getName(), customerMessage)
+                );
+            }
+        }
+
+        String adminTitle = fullyReturned
+                ? "✅ Đã duyệt hoàn trả đơn hàng"
+                : "✅ Đã duyệt hoàn trả một phần";
+        String adminMessage = String.format(
+                "Đơn hàng %s vừa được duyệt hoàn trả và %s.\n\n" +
+                        "👤 Khách hàng: %s\n" +
+                        "🛍️ Sản phẩm: %s%s\n" +
+                        "📦 Số lượng trả: %,d\n" +
+                        "💰 Số tiền hoàn: %s\n" +
+                        "📝 Ghi chú: %s\n" +
+                        "📅 Thời gian: %s",
+                order.getOrderNumber(),
+                fullyReturned ? "hoàn tất" : "hoàn trả một phần",
+                customer != null ? customer.getName() : "Khách hàng",
+                returnRequest.getOrderItem() != null ? returnRequest.getOrderItem().getProductName() : "N/A",
+                returnRequest.getOrderItem() != null && returnRequest.getOrderItem().getVariantName() != null
+                        ? " (" + returnRequest.getOrderItem().getVariantName() + ")"
+                        : "",
+                returnRequest.getQuantity() != null ? returnRequest.getQuantity() : 0,
+                refundDisplay,
+                returnRequest.getNote() != null && !returnRequest.getNote().isBlank()
+                        ? returnRequest.getNote()
+                        : "Không có ghi chú",
+                LocalDateTime.now().format(DATE_FMT)
+        );
+
+        notifyAdminCustomers(adminTitle, adminMessage);
+        notifyAdminEmails(adminTitle, adminMessage);
+
+        log.info("✅ [RETURN_APPROVED] Notified customer/admin for return request #{}", returnRequest.getId());
+    }
+
+    // ================================================================
     // 2. ĐƠN HÀNG ĐÃ THANH TOÁN
     // ================================================================
 
@@ -109,7 +282,7 @@ public class CustomerEventNotificationService {
                 "Đơn hàng %s đã được thanh toán thành công.\n\n" +
                         "💳 Phương thức: %s\n" +
                         "💰 Số tiền: %s VNĐ\n" +
-                        "🎯 Điểm tích lũy: +%,d điểm\n" +
+                        "🎯 Điểm tích lũy: +%,d điểm nhận được khi hàng đã giao đến nơi\n" +
                         "📅 Thời gian: %s",
                 order.getOrderNumber(),
                 payment.getMethod(),
@@ -170,13 +343,6 @@ public class CustomerEventNotificationService {
                 message
         );
 
-        if (customer.getEmail() != null) {
-            sendSimpleEmail(
-                    customer.getEmail(),
-                    "Đơn hàng " + order.getOrderNumber() + " đã bị hủy",
-                    buildEmailBody(customer.getName(), message)
-            );
-        }
 
         log.info("✅ [ORDER_CANCELLED] Notified customer #{} for order {}",
                 customer.getId(), order.getOrderNumber());
@@ -589,6 +755,35 @@ public class CustomerEventNotificationService {
         );
     }
 
+    private void notifyAdminCustomers(String title, String message) {
+        List<Customer> adminCustomers = customerRepository.findAdminCustomers();
+
+        for (Customer adminCustomer : adminCustomers) {
+            if (adminCustomer.getId() == null) continue;
+
+            notificationService.createAndSaveNotification(
+                    adminCustomer.getId(),
+                    NotificationType.RETURN_REQUEST,
+                    title,
+                    message
+            );
+        }
+    }
+
+    private void notifyAdminEmails(String title, String message) {
+        List<String> adminEmails = userRepository.findAdminEmails();
+        if (adminEmails == null || adminEmails.isEmpty()) return;
+
+        String html = """
+                <div style="font-family:Arial,Helvetica,sans-serif;line-height:1.6;color:#222">
+                  <h2 style="margin:0 0 12px;color:#1a2744;">%s</h2>
+                  <pre style="white-space:pre-wrap;background:#f7f7f7;border:1px solid #ddd;padding:12px;border-radius:6px;">%s</pre>
+                </div>
+                """.formatted(title, message);
+
+        emailService.sendSecurityAlertToAdmins(adminEmails, title, html);
+    }
+
     private void sendSimpleEmail(String to, String subject, String body) {
 
         try {
@@ -597,7 +792,7 @@ public class CustomerEventNotificationService {
 
             CreateEmailOptions params =
                     CreateEmailOptions.builder()
-                            .from("BonBon Coffee <onboarding@resend.dev>")
+                            .from("")
                             .to(to)
                             .subject(subject)
                             .text(body)

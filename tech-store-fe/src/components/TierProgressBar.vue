@@ -1,5 +1,5 @@
 <template>
-  <el-card v-if="progress" shadow="never" :body-style="{ padding: 0 }">
+  <el-card v-if="progress" shadow="never" class="profile-card" :body-style="{ padding: 0 }">
 
     <!-- ── Compact bar ─────────────────────────────── -->
     <div class="tier-bar" @click="expanded = !expanded">
@@ -30,10 +30,10 @@
           </el-tag>
         </el-space>
         <el-text v-else>
-          <span style="display: inline-flex; align-items: center; gap: 4px;">
-            <el-icon><Trophy /></el-icon>
+          <el-space :size="4" align="center">
+            <el-icon color="var(--el-color-warning)"><Trophy /></el-icon>
             Hạng cao nhất
-          </span>
+          </el-space>
         </el-text>
       </div>
 
@@ -243,6 +243,11 @@ defineExpose({ refresh: loadTierProgress });
   padding: 12px 16px;
   cursor: pointer;
   user-select: none;
+  border-radius: 12px 12px 0 0;
+  transition: background 0.2s ease;
+}
+.tier-bar:hover {
+  background: var(--el-fill-color-light);
 }
 
 .tier-bar__center {

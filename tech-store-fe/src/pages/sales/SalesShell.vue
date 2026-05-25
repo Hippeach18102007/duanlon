@@ -11,24 +11,17 @@
              border-right: 1px solid rgba(255,255,255,0.06); z-index: 100;"
     >
       <!-- Brand -->
-      <el-button
-        text
-        style="padding: 20px 20px 16px; height: auto; justify-content: flex-start; width: 100%;"
+      <div
+        style="padding: 20px 20px 16px; display: flex; align-items: center; width: 100%; box-sizing: border-box;"
       >
         <el-space :size="10">
-          <el-avatar
-            :size="36"
-            shape="square"
-            style="background: linear-gradient(135deg, #f59e0b, #d97706); border-radius: 8px; flex-shrink: 0;"
-          >
-            <el-icon :size="18"><ShoppingBag /></el-icon>
-          </el-avatar>
+          <img src="/logo.png" alt="Logo" style="height: 36px; object-fit: contain; border-radius: 8px;" />
           <el-space direction="vertical" :size="1">
             <el-text tag="b" style="color: #f8fafc; font-size: 15px; letter-spacing: -0.3px;">TechStore</el-text>
             <el-text size="small" style="color: #f59e0b; font-weight: 700; letter-spacing: 0.5px;">Sales POS</el-text>
           </el-space>
         </el-space>
-      </el-button>
+      </div>
 
       <!-- User pill -->
       <el-card

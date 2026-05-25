@@ -6,7 +6,7 @@
     <div class="checkout-left">
 
       <!-- Cart items -->
-      <el-card shadow="never" style="margin-bottom: 14px;">
+      <el-card shadow="never" class="profile-card" style="margin-bottom: 14px;">
         <template #header>
           <el-space :size="10" align="center">
             <el-icon><ShoppingCart /></el-icon>
@@ -42,13 +42,7 @@
       </el-card>
 
       <!-- Delivery method -->
-      <el-card shadow="never" style="margin-bottom: 14px;">
-        <template #header>
-          <el-space :size="10" align="center">
-            <el-icon><Van /></el-icon>
-            <el-text tag="b">Hình thức giao hàng</el-text>
-          </el-space>
-        </template>
+      <el-card shadow="never" class="profile-card" style="margin-bottom: 14px;">
         <el-radio-group v-model="form.channel" style="width: 100%;">
           <el-space direction="vertical" fill :size="10" style="width: 100%;">
             <el-card
@@ -95,7 +89,7 @@
         </el-radio-group>
       </el-card>
 
-      <el-card v-if="form.channel === 'ONLINE'" shadow="never" style="margin-bottom: 14px;">
+      <el-card v-if="form.channel === 'ONLINE'" shadow="never" class="profile-card" style="margin-bottom: 14px;">
         <template #header>
           <el-row justify="space-between" align="middle">
             <el-space :size="10" align="center">
@@ -116,7 +110,7 @@
       </el-card>
 
       <!-- Notes -->
-      <el-card shadow="never">
+      <el-card shadow="never" class="profile-card">
         <template #header>
           <el-space :size="10" align="center">
             <el-icon><Document /></el-icon>
@@ -137,13 +131,7 @@
     <div class="checkout-right">
 
       <!-- Payment method -->
-      <el-card shadow="never" style="margin-bottom: 14px;">
-        <template #header>
-          <el-space :size="10" align="center">
-            <el-icon><CreditCard /></el-icon>
-            <el-text tag="b">Phương thức thanh toán</el-text>
-          </el-space>
-        </template>
+      <el-card shadow="never" class="profile-card" style="margin-bottom: 14px;">
         <el-radio-group v-model="form.paymentMethod" style="width: 100%;">
           <el-space direction="vertical" fill :size="8" style="width: 100%;">
             <el-card
@@ -183,13 +171,7 @@
       </el-card>
 
       <!-- Voucher -->
-      <el-card shadow="never" style="margin-bottom: 14px;">
-        <template #header>
-          <el-space :size="10" align="center">
-            <el-icon><Ticket /></el-icon>
-            <el-text tag="b">Mã khuyến mãi</el-text>
-          </el-space>
-        </template>
+      <el-card shadow="never" class="profile-card" style="margin-bottom: 14px;">
 
         <el-card
           v-if="selectedVoucher"
@@ -231,13 +213,7 @@
       </el-card>
 
       <!-- Summary -->
-      <el-card shadow="never" style="margin-bottom: 14px;">
-        <template #header>
-          <el-space :size="10" align="center">
-            <el-icon><List /></el-icon>
-            <el-text tag="b">Tóm tắt đơn hàng</el-text>
-          </el-space>
-        </template>
+      <el-card shadow="never" class="profile-card" style="margin-bottom: 14px;">
 
         <el-space direction="vertical" fill :size="10" style="width: 100%;">
           <el-row justify="space-between">

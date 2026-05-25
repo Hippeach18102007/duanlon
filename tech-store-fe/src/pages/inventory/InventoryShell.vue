@@ -11,24 +11,17 @@
              border-right: 1px solid rgba(255,255,255,0.05); z-index: 100;"
     >
       <!-- Brand -->
-      <el-button
-        text
-        style="padding: 20px 20px 16px; height: auto; justify-content: flex-start; width: 100%;"
+      <div
+        style="padding: 20px 20px 16px; display: flex; align-items: center; width: 100%; box-sizing: border-box;"
       >
         <el-space :size="10">
-          <el-avatar
-            :size="36"
-            shape="square"
-            style="background: #3b82f6; border-radius: 8px; flex-shrink: 0;"
-          >
-            <el-icon :size="18"><Box /></el-icon>
-          </el-avatar>
+          <img src="/logo.png" alt="Logo" style="height: 36px; object-fit: contain; border-radius: 8px;" />
           <el-space direction="vertical" :size="1">
             <el-text tag="b" style="color: #f8fafc; font-size: 15px; letter-spacing: -0.3px;">TechStore</el-text>
             <el-text size="small" style="color: #64748b; letter-spacing: 0.5px;">Inventory Portal</el-text>
           </el-space>
         </el-space>
-      </el-button>
+      </div>
 
       <!-- User pill -->
       <el-card

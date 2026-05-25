@@ -1,8 +1,8 @@
 <template>
-  <div style="position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
-              background: #f0f2fa; padding: 24px; overflow-y: auto;">
+  <div class="auth-page">
     <el-card
       shadow="always"
+      class="profile-card"
       :class="{ 'card-shake': shaking }"
       style="width: 440px; max-width: 100%;"
       :body-style="{ padding: '40px' }"
@@ -12,7 +12,7 @@
         <el-tag type="primary" effect="plain" size="small">
           &nbsp;Bảo mật
         </el-tag>
-        <el-text tag="div" style="font-size: 28px; font-weight: 800; letter-spacing: -0.02em; color: #0f172a;">
+        <el-text tag="div" class="auth-title">
           Đổi mật khẩu
         </el-text>
         <el-text size="small" type="info">Giữ tài khoản an toàn với mật khẩu mạnh</el-text>
@@ -97,6 +97,7 @@
         <el-card
           v-if="form.newPassword"
           shadow="never"
+          class="profile-card"
           style="margin-bottom: 14px; background: var(--el-fill-color-lighter);"
           :body-style="{ padding: '14px' }"
         >

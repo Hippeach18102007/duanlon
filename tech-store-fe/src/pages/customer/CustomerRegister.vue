@@ -1,11 +1,11 @@
 <template>
-  <div style="position: fixed; inset: 0; z-index: 9999; display: flex; align-items: center;
-              justify-content: center; background: #f0f2fa; padding: 24px; overflow-y: auto;">
+  <div class="auth-page" style="overflow-y: auto;">
 
     <el-card
       shadow="always"
+      class="profile-card"
       :class="{ 'card-shake': shaking }"
-      style="width: 520px; max-width: 100%; margin-top: 16px; margin-bottom: 16px;"
+      style="width: 520px; max-width: 100%; margin: 16px 0;"
       :body-style="{ padding: '36px 32px' }"
     >
       <!-- Header -->
@@ -13,7 +13,7 @@
         <el-tag type="primary" effect="plain" size="small">
           &nbsp;Cổng khách hàng
         </el-tag>
-        <el-text tag="div" style="font-size: 28px; font-weight: 700; color: #111827; letter-spacing: -0.02em; line-height: 1.2;">
+        <el-text tag="div" class="auth-title">
           Tạo tài khoản
         </el-text>
         <el-text size="small" type="info">Tham gia cùng chúng tôi — chỉ mất một phút</el-text>
@@ -347,7 +347,14 @@ async function doRegister() {
 }
 </script>
 
-<style>
+<style scoped>
+.card-shake {
+  animation: shake 0.5s cubic-bezier(0.36,0.07,0.19,0.97);
+}
+@keyframes shake {
+  0%,100%{transform:translateX(0)} 15%{transform:translateX(-8px)} 30%{transform:translateX(7px)}
+  45%{transform:translateX(-5px)} 60%{transform:translateX(4px)} 75%{transform:translateX(-2px)}
+}
 .datepicker-above-overlay {
   z-index: 10000 !important;
 }

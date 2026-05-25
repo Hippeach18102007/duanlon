@@ -445,9 +445,10 @@ router.beforeEach((to) => {
   const isCustomer = role === "CUSTOMER";
 
   if (to.meta?.requiresAuth && !isAuthed) {
-    if (isSystemRoute) return "/system/login";
-    if (isSalesRoute) return "/sales/login";
-    return "/login";
+    const redirectUrl = to.fullPath;
+    if (isSystemRoute) return { path: "/system/login", query: { redirect: redirectUrl } };
+    if (isSalesRoute) return { path: "/sales/login", query: { redirect: redirectUrl } };
+    return { path: "/login", query: { redirect: redirectUrl } };
   }
 
   if (isAuthed) {

@@ -1,9 +1,9 @@
 <template>
-  <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center;
-              background: #f0f2fa; padding: 24px;">
+  <div class="auth-page">
 
     <el-card
       shadow="always"
+      class="profile-card"
       :class="{ 'card-shake': shaking }"
       style="width: 420px; max-width: 100%;"
       :body-style="{ padding: '36px 32px' }"
@@ -11,8 +11,7 @@
       <!-- Header -->
       <el-space direction="vertical" :size="6" style="width: 100%; margin-bottom: 28px;">
         <el-tag type="primary" effect="plain" size="small">Cổng khách hàng</el-tag>
-        <el-text tag="div" style="font-size: 28px; font-weight: 700; color: #111827;
-                                   letter-spacing: -0.02em; line-height: 1.2;">
+        <el-text tag="div" class="auth-title">
           {{ stepTitle }}
         </el-text>
         <el-text size="small" type="info">{{ stepDesc }}</el-text>
@@ -147,21 +146,19 @@
         </el-form-item>
       </el-form>
 
-      <!-- STEP 4: Thành công -->
-      <div v-if="step === 4" style="text-align: center; padding: 12px 0;">
-        <el-icon style="font-size: 56px; color: #22c55e; margin-bottom: 16px;">
-          <CircleCheckFilled />
-        </el-icon>
-        <el-text tag="div" style="font-size: 18px; font-weight: 600; color: #111827; margin-bottom: 8px;">
-          Đặt lại mật khẩu thành công!
-        </el-text>
-        <el-text size="small" type="info" tag="div" style="margin-bottom: 24px;">
-          Bạn có thể đăng nhập bằng mật khẩu mới ngay bây giờ.
-        </el-text>
-        <el-button type="primary" size="large" style="width: 100%;" @click="router.replace('/login')">
-          Về trang đăng nhập
-        </el-button>
-      </div>
+      <!-- STEP 4: Thành công - dùng el-result -->
+      <el-result
+        v-if="step === 4"
+        icon="success"
+        title="Đặt lại mật khẩu thành công!"
+        sub-title="Bạn có thể đăng nhập bằng mật khẩu mới ngay bây giờ."
+      >
+        <template #extra>
+          <el-button type="primary" size="large" style="width: 100%;" @click="router.replace('/login')">
+            Về trang đăng nhập
+          </el-button>
+        </template>
+      </el-result>
 
       <!-- Back to login (step 1-3) -->
       <el-row v-if="step < 4" justify="center" style="margin-top: 20px;">

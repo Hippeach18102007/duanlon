@@ -8,9 +8,9 @@
         <!-- Brand -->
         <el-col :md="8" :sm="24" :xs="24">
           <div class="ft-brand">
-            <el-space :size="6">
-              <el-icon :size="20" color="#818cf8"><Lightning /></el-icon>
-              <span class="ft-logo">RetailPro <em>TechStore</em></span>
+            <el-space :size="8" align="center">
+              <img src="/logo.png" alt="TechStore Logo" style="height: 32px; object-fit: contain; border-radius: 6px;" />
+              <span class="ft-logo" style="font-size: 18px;">TechStore</span>
             </el-space>
             <p class="ft-desc">Hệ thống bán lẻ laptop chính hãng — chất lượng kiểm định, giá minh bạch, dịch vụ tận tâm.</p>
             <el-space :size="6">
@@ -26,7 +26,7 @@
           <el-row :gutter="16">
             <el-col :span="12">
               <div class="ft-col-title">Sản phẩm</div>
-              <div v-for="l in productLinks" :key="l" class="ft-link">{{ l }}</div>
+              <div v-for="l in productLinks" :key="l.name" class="ft-link" @click="applyFooterFilter(l)" style="cursor: pointer;">{{ l.name }}</div>
             </el-col>
             <el-col :span="12">
               <div class="ft-col-title">Hỗ trợ</div>
@@ -85,6 +85,11 @@ import {
   Lock, Van, RefreshRight, CircleCheck,
 } from '@element-plus/icons-vue'
 
+import { useRoute, useRouter } from "vue-router"
+
+const route = useRoute()
+const router = useRouter()
+
 const year = new Date().getFullYear()
 
 const social = [
@@ -94,7 +99,25 @@ const social = [
   { label: 'TikTok',  icon: Headset },
 ]
 
-const productLinks = ['Laptop Gaming', 'Laptop Văn phòng', 'MacBook', 'Laptop học sinh – SV']
+const productLinks = [
+  { name: 'Laptop Gaming', type: 'categoryName', value: 'Gaming' },
+  { name: 'Laptop Đồ Họa', type: 'categoryName', value: 'Đồ Họa' },
+  { name: 'Laptop Mỏng Nhẹ', type: 'categoryName', value: 'Mỏng Nhẹ' },
+  { name: 'Laptop Sinh Viên', type: 'categoryName', value: 'Sinh Viên' },
+  { name: 'Apple (MacBook)', type: 'brand', value: 'Apple' }
+]
+
+function applyFooterFilter(link) {
+  if (route.name !== "home") {
+    router.push({ name: "home" });
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent("products:filter", { detail: { type: link.type, value: link.value } }));
+    }, 300);
+  } else {
+    window.dispatchEvent(new CustomEvent("products:filter", { detail: { type: link.type, value: link.value } }));
+  }
+}
+
 const supportLinks = ['Tra cứu đơn hàng', 'Chính sách đổi trả', 'Bảo hành sản phẩm', 'Câu hỏi thường gặp']
 
 const contact = [
@@ -150,11 +173,16 @@ const trust = [
   color: #f8fafc; margin-bottom: 10px;
 }
 .ft-link {
-  font-size: 12px; color: #64748b;
-  margin-bottom: 7px; cursor: pointer;
-  transition: color 0.15s;
+  font-size: 13.5px;
+  color: #94a3b8; /* slate-400 */
+  margin-bottom: 12px;
+  cursor: pointer;
+  transition: color 0.2s, transform 0.2s;
 }
-.ft-link:hover { color: #94a3b8; }
+.ft-link:hover {
+  color: #fff;
+  transform: translateX(4px);
+}
 
 /* Contact */
 .ft-contact-list { display: flex; flex-direction: column; gap: 7px; margin-bottom: 12px; }

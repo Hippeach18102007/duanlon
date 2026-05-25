@@ -122,3 +122,41 @@ body {
 .toast .btn-close {
   transform: scale(1.05);
 }
+
+/* ── Customer Page Utilities ─────────────────────────────────────── */
+
+/* Full-screen centered layout for auth/error pages */
+.auth-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  background: var(--el-bg-color-page);
+  padding: 24px;
+}
+
+/* Consistent card style: rounded 12px + EP border color */
+.profile-card.el-card {
+  border-radius: 12px !important;
+  border-color: var(--el-border-color-lighter) !important;
+}
+
+/* Lift-on-hover effect for interactive cards */
+.hoverable.el-card {
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  cursor: default;
+}
+.hoverable.el-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--el-box-shadow-light) !important;
+}
+
+/* Page-level auth titles */
+.auth-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--el-text-color-primary);
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}

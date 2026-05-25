@@ -81,19 +81,10 @@
           </template>
         </el-table-column>
 
-        <!-- Status -->
-        <el-table-column label="Trạng thái" width="140" align="center">
-          <template #default>
-            <el-tag type="primary" effect="light" round>
-              Đang giao
-            </el-tag>
-          </template>
-        </el-table-column>
-
         <!-- Date -->
-        <el-table-column prop="createdAt" label="Ngày tạo" width="140">
+        <el-table-column prop="shippedAt" label="Ngày xuất kho" width="180">
           <template #default="{ row }">
-            <el-text type="info">{{ formatDate(row.createdAt) }}</el-text>
+            <el-text type="info">{{ formatDateTime(row.shippedAt || row.createdAt) }}</el-text>
           </template>
         </el-table-column>
 
@@ -122,7 +113,7 @@ import { useRouter } from "vue-router";
 import { ordersApi } from "../../api/orders.api";
 import { ElMessage } from "element-plus";
 import { Money, Van } from "@element-plus/icons-vue";
-import { formatVND, formatDate, initials } from "../../utils/format";
+import { formatVND, formatDateTime, initials } from "../../utils/format";
 
 const router = useRouter();
 const orders = ref([]);
@@ -143,8 +134,13 @@ const totalAmount = computed(() =>
 
 const loadOrders = async (silent = false) => {
   try {
-    const res = await ordersApi.listShipping();
-    orders.value = res.data;
+    const [shippingRes, deliveredRes] = await Promise.all([
+      ordersApi.listShipping(),
+      ordersApi.listDelivered()
+    ]);
+    const combined = [...(shippingRes.data || []), ...(deliveredRes.data || [])];
+    combined.sort((a, b) => new Date(b.shippedAt || b.createdAt) - new Date(a.shippedAt || a.createdAt));
+    orders.value = combined;
   } catch (error) {
     if (!silent) ElMessage.error("Không thể tải danh sách đơn hàng");
   }

@@ -1,41 +1,31 @@
 <template>
-  <div style="position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
-              background: #f0f2fa; padding: 24px; z-index: 9999;">
-    <el-card
-      shadow="always"
-      style="width: 400px; max-width: 100%; text-align: center;"
-      :body-style="{ padding: '44px 40px 40px' }"
-    >
-      <el-space direction="vertical" fill :size="0" style="width: 100%;">
-        <el-tag type="danger" effect="plain" round style="margin-bottom: 24px; font-size: 11px; letter-spacing: 0.1em;">
-          403
-        </el-tag>
-
-        <div style="position: relative; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 24px;">
-          <el-icon :size="48" style="color: var(--el-color-danger); z-index: 1;"><Lock /></el-icon>
-          <div class="lock-ring ring-1"></div>
-          <div class="lock-ring ring-2"></div>
-        </div>
-
-        <el-text tag="div" style="font-size: 28px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 10px;">
-          Access Denied
-        </el-text>
-        <el-text type="info" style="line-height: 1.7; display: block; margin-bottom: 28px;">
-          You don't have permission to view this page.<br>
-          This incident may be logged.
-        </el-text>
-
-        <el-divider style="margin: 0 0 28px;" />
-
-        <el-space :size="10" style="justify-content: center;">
-          <el-button type="danger" plain @click="goBack">
-            <el-icon><ArrowLeft /></el-icon> Go Back
-          </el-button>
-          <el-button text @click="goHome">
-            <el-icon><House /></el-icon> Home
-          </el-button>
-        </el-space>
-      </el-space>
+  <div class="auth-page">
+    <el-card shadow="always" class="profile-card" style="width: 420px; max-width: 100%;">
+      <el-result icon="error" title="403 — Truy cập bị từ chối">
+        <template #icon>
+          <div class="lock-icon-wrap">
+            <el-icon :size="52" color="var(--el-color-danger)"><Lock /></el-icon>
+            <div class="lock-ring ring-1" />
+            <div class="lock-ring ring-2" />
+          </div>
+        </template>
+        <template #sub-title>
+          <el-text type="info">
+            Bạn không có quyền truy cập trang này.<br />
+            Sự việc này có thể được ghi lại.
+          </el-text>
+        </template>
+        <template #extra>
+          <el-space :size="10">
+            <el-button type="danger" plain @click="goBack">
+              <el-icon><ArrowLeft /></el-icon> Quay lại
+            </el-button>
+            <el-button text @click="goHome">
+              <el-icon><House /></el-icon> Trang chủ
+            </el-button>
+          </el-space>
+        </template>
+      </el-result>
     </el-card>
   </div>
 </template>
@@ -57,6 +47,22 @@ function goHome() {
 </script>
 
 <style scoped>
+.auth-page {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--el-bg-color-page);
+  padding: 24px;
+  z-index: 9999;
+}
+.lock-icon-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
 .lock-ring {
   position: absolute;
   border-radius: 50%;

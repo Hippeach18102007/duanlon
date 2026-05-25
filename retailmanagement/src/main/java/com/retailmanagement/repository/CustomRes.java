@@ -169,6 +169,17 @@
                 @Param("since") LocalDateTime since
         );
         Optional<Customer> findByUserId(Integer userId);
+
+        @Query(value = """
+    SELECT c.* FROM customers c
+    INNER JOIN users u ON c.user_id = u.id
+    INNER JOIN roles r ON u.role_id = r.id
+    WHERE r.name = 'ADMIN'
+      AND c.is_active = 1
+    ORDER BY c.created_at DESC
+    """, nativeQuery = true)
+        List<Customer> findAdminCustomers();
+
         @Query(value = """
     SELECT c.* FROM customers c
     CROSS APPLY (

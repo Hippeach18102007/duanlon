@@ -63,6 +63,7 @@ public class OrderService {
     private final CustomRes customerRepository;
     private final UserRepository userRepository;
     private final CustomerService customerService;
+    private final CustomerEventNotificationService customerEventNotificationService;
     private final SpinWheelService spinWheelService;
     private final EmailService emailService;
     private final OrderEmailService orderEmailService;
@@ -277,16 +278,12 @@ public class OrderService {
         int itemIndex = 0;
 
         for (CreateOrderItemRequest itemReq : request.getItems()) {
-            ProductVariant variant = variantRepository.findById(itemReq.getVariantId())
+            ProductVariant variant = variantRepository.findByIdForUpdate(itemReq.getVariantId())
                     .orElseThrow(() -> new RuntimeException("Variant not found"));
 
-            int available;
-            if ("OFFLINE".equals(request.getChannel())) {
-                available = productSerialRepository
-                        .countByVariantIdAndStatus(variant.getId(), "IN_STOCK");
-            } else {
-                available = variant.getStockQuantity() - variant.getReservedQty();
-            }
+            int available = Math.max(0,
+                    (variant.getStockQuantity() != null ? variant.getStockQuantity() : 0)
+                            - (variant.getReservedQty() != null ? variant.getReservedQty() : 0));
             if (available < itemReq.getQuantity()) {
                 throw new RuntimeException("Not enough stock for " + variant.getVariantName());
             }
@@ -535,6 +532,7 @@ public class OrderService {
 
         orderRepository.save(order);
         emailService.sendOrderCancelledEmail(order, reason);
+        customerEventNotificationService.onOrderCancelled(order, reason);
     }
 
     @SensitiveOperation(action = ActionType.DELETE_OPERATION, entity = "ORDER", description = "Delete order", severity = SeverityLevel.HIGH)
@@ -788,7 +786,7 @@ public class OrderService {
         }
 
         String trimmed = serialNumber.trim();
-        ProductSerial serial = productSerialRepository.findBySerialNumber(trimmed)
+        ProductSerial serial = productSerialRepository.findBySerialNumberForUpdate(trimmed)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy serial: " + trimmed));
 
         if (!"IN_STOCK".equals(serial.getStatus())) {
@@ -838,18 +836,21 @@ public class OrderService {
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy order item"));
 
         String trimmed = serialNumber.trim();
-        List<OrderItemSerial> list = orderItemSerialRepository.findByOrderItem(orderItem);
-        OrderItemSerial toDelete = list.stream()
-                .filter(ois -> ois.getProductSerial().getSerialNumber().equals(trimmed))
-                .findFirst()
+        ProductSerial serial = productSerialRepository.findBySerialNumberForUpdate(trimmed)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy serial: " + trimmed));
+
+        OrderItemSerial lockedToDelete = orderItemSerialRepository.findByProductSerial(serial)
                 .orElseThrow(() -> new RuntimeException(
                         "Serial " + trimmed + " chưa được gán cho sản phẩm này"));
 
-        ProductSerial serial = toDelete.getProductSerial();
+        if (!lockedToDelete.getOrderItem().getId().equals(orderItem.getId())) {
+            throw new RuntimeException("Serial " + trimmed + " chưa được gán cho sản phẩm này");
+        }
+
         serial.setStatus("IN_STOCK");
         productSerialRepository.save(serial);
 
-        orderItemSerialRepository.delete(toDelete);
+        orderItemSerialRepository.delete(lockedToDelete);
     }
 
     public List<BestVoucherSuggestion> suggestVouchersForCart(

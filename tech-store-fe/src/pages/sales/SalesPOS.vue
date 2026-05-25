@@ -313,6 +313,18 @@
           </div>
         </div>
 
+        <div v-else class="transfer-qr-card">
+          <el-text size="small" class="mb-5 block transfer-qr-title">Quét mã QR để chuyển khoản</el-text>
+          <div class="transfer-qr-box">
+            <img :src="transferQrUrl" alt="QR thanh toán MB Bank" class="transfer-qr-image" />
+          </div>
+          <div class="transfer-qr-meta">
+            <div><strong>Ngân hàng:</strong> MB Bank</div>
+            <div><strong>Số tài khoản:</strong> 0344269926</div>
+            <div><strong>Số tiền:</strong> {{ formatMoney(totalAmount) }}</div>
+          </div>
+        </div>
+
         <el-input v-model="orderNotes" type="textarea" placeholder="Ghi chú đơn hàng (nếu có)..." :rows="2" />
         <el-alert v-if="payError" :title="payError" type="error" show-icon :closable="false" />
         <el-text v-if="payLoading" type="primary" size="small" class="center block">{{ payStep }}</el-text>
@@ -324,7 +336,7 @@
       </template>
     </el-dialog>
 
-    <el-dialog v-model="showDone" title="Hoàn tất" width="420px" :show-close="false" :close-on-click-modal="false">
+    <el-dialog v-model="showDone" title="Hoàn tất" width="420px">
       <el-result icon="success" title="Bán hàng thành công">
         <template #sub-title>
           <el-descriptions :column="1" border size="small" class="mt-10">
@@ -386,6 +398,8 @@ const cusError = ref("");
 const foundCustomer = ref(null);
 const orderNotes = ref("");
 const hasDraft = ref(false);
+const showDraftPrompt = ref(false);
+const draftCartPreview = ref("");
 
 // ── Promo & Payment ──
 const promoCode = ref("");
@@ -422,6 +436,13 @@ const subtotal = computed(() => cart.value.reduce((s, i) => s + i.price, 0));
 const vipDiscount = computed(() => Math.round(subtotal.value * vipDiscountPct.value / 100));
 const spinDiscount = computed(() => Math.round(subtotal.value * spinDiscountPct.value / 100));
 const totalAmount = computed(() => Math.max(0, subtotal.value - vipDiscount.value - spinDiscount.value - promoDiscount.value));
+const transferQrUrl = computed(() => {
+  const bankCode = "MB";
+  const accountNo = "0344269926";
+  const amount = Math.max(0, Math.round(totalAmount.value));
+  const message = `TECHSTORE-${(orderNotes.value || "POS").trim() || "POS"}`;
+  return `https://img.vietqr.io/image/${bankCode}-${accountNo}-compact2.png?amount=${amount}&addInfo=${encodeURIComponent(message)}`;
+});
 const quickOptions = computed(() => {
   const t = totalAmount.value;
   const base = Math.ceil(t / 10000) * 10000;
@@ -758,6 +779,21 @@ async function confirmPayment() {
       throw new Error(`Lỗi phân tích ID đơn hàng từ hệ thống: ${JSON.stringify(respData).substring(0, 50)}`);
     }
 
+    // ── Gán serial cho từng sản phẩm ─────────────────────────────────────
+    // Parse danh sách items backend trả về (chứa id (itemId) và variantId)
+    payStep.value = "Gán serial sản phẩm...";
+    // Dùng pool để tránh gán trùng khi mua nhiều cùng variantId
+    const orderItemsPool = [...(respData.items ?? [])];
+    for (const cartItem of cart.value) {
+      if (!cartItem.serialCode) continue; // bỏ qua nếu cart item không có serialCode
+      const idx = orderItemsPool.findIndex(oi => String(oi.variantId) === String(cartItem.variantId));
+      if (idx === -1) continue;
+      const orderItem = orderItemsPool.splice(idx, 1)[0]; // lấy ra khỏi pool tránh gán trùng
+      await ordersApi.assignSerial(Number(orderId), orderItem.id, cartItem.serialCode).catch(err => {
+        console.warn(`[POS] assignSerial thất bại variantId=${cartItem.variantId}:`, err?.response?.data || err?.message);
+      });
+    }
+
     payStep.value = "Ghi nhận thanh toán...";
     await paymentsApi.create({ 
       orderId: Number(orderId), 
@@ -767,25 +803,35 @@ async function confirmPayment() {
       transactionRef: `TXN-POS-${Date.now()}`
     });
 
-    payStep.value = "Cập nhật trạng thái giao hàng...";
-    await ordersApi.markAsProcessing(orderId).catch(() => {});
-    await ordersApi.markAsShipping(orderId).catch(() => {});
-    await ordersApi.markAsDelivered(orderId);
-
-    payStep.value = "Cập nhật kho...";
-    await Promise.allSettled(cart.value.map(i => serialsApi.updateStatus(i.serialId, "SOLD")));
-
+    // ── Thanh toán thành công → đóng modal NGAY, không chờ các bước phụ ──
     snapshotTotal.value = totalAmount.value;
     foundCustomerSnapshot.value = foundCustomer.value;
     orderDone.value = oRes.data?.data || oRes.data;
     showModal.value = false; showDone.value = true;
     toast("Thanh toán thành công!", "success");
-    resetAll();
-  } catch (e) { payError.value = e.response?.data?.message || "Lỗi thanh toán."; }
+
+    // ── Các bước phụ chạy nền, không block UI ─────────────────────────────
+    // Cập nhật trạng thái đơn hàng (an toàn – không làm đơ màn hình)
+    (async () => {
+      try {
+        await ordersApi.markAsProcessing(orderId);
+        await ordersApi.markAsShipping(orderId);
+        await ordersApi.markAsDelivered(orderId);
+      } catch (statusErr) {
+        console.warn("[POS] Cập nhật trạng thái thất bại:", statusErr?.response?.data || statusErr?.message);
+      }
+      // Cập nhật kho
+      await Promise.allSettled(cart.value.map(i => serialsApi.updateStatus(i.serialId, "SOLD")));
+    })();
+
+    // Do not reset everything immediately so the success dialog can be shown.
+    // `resetAll()` is triggered by the user via the "ĐƠN MỚI" button.
+  } catch (e) { payError.value = e?.response?.data?.message || e?.message || "Lỗi thanh toán."; }
   finally { payLoading.value = false; }
 }
 
 function resetAll() {
+  showDone.value = false;
   cart.value = []; foundCustomer.value = null; cusQuery.value = "";
   orderNotes.value = ""; searchQuery.value = ""; clearPromo();
   vipDiscountPct.value = 0; spinDiscountPct.value = 0; spinBonusExpiry.value = null; customerTierName.value = "";
@@ -1123,4 +1169,31 @@ onUnmounted(() => window.removeEventListener("keydown", onKey));
 .pval { font-size: 12px; font-weight: 600; color: #f56c6c; }
 .psave { font-size: 10px; color: #67c23a; margin-top: 2px; }
 .pexp { font-size: 10px; color: #909399; margin-top: 1px; }
+.transfer-qr-card {
+  border: 1px solid #d9ecff;
+  background: linear-gradient(180deg, #f0f7ff 0%, #ffffff 100%);
+  border-radius: 10px;
+  padding: 12px;
+}
+.transfer-qr-title { font-weight: 600; color: #1f3b63; }
+.transfer-qr-box {
+  display: flex;
+  justify-content: center;
+  margin: 6px 0 10px;
+}
+.transfer-qr-image {
+  width: 220px;
+  height: 220px;
+  object-fit: contain;
+  border-radius: 8px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  padding: 6px;
+}
+.transfer-qr-meta {
+  font-size: 12px;
+  color: #606266;
+  line-height: 1.6;
+  word-break: break-word;
+}
 </style>

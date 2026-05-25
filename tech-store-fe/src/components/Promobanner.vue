@@ -5,7 +5,7 @@
     :interval="5000"
     arrow="always"
     indicator-position="inside"
-    style="border-radius: 4px; overflow: hidden; margin-bottom: 24px;"
+    class="promo-carousel"
   >
     <el-carousel-item v-for="(slide, i) in slides" :key="i">
       <div :style="{ background: slide.bg, height: '100%', display: 'flex', alignItems: 'center' }">
@@ -18,10 +18,8 @@
                   {{ slide.tagLabel }}
                 </span>
               </el-tag>
-              <span style="font-size: clamp(20px, 2.8vw, 32px); font-weight: 800; color: #f8fafc; line-height: 1.2; display: block;">
-                {{ slide.title }}
-              </span>
-              <el-button type="primary" size="large" color="#6366f1" @click="goToProduct(slide.productId)">
+              <span class="slide-title">{{ slide.title }}</span>
+              <el-button type="primary" size="large" @click="goToProduct(slide.productId)">
                 Xem thêm
                 <el-icon class="el-icon--right"><ArrowRight /></el-icon>
               </el-button>
@@ -33,7 +31,7 @@
               :src="slide.img"
               :alt="slide.title"
               fit="cover"
-              style="width: 100%; max-width: 320px; height: 210px; border-radius: 4px; box-shadow: 0 20px 60px rgba(0,0,0,0.4);"
+              style="width: 100%; max-width: 320px; height: 210px; border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,0.4);"
             />
           </el-col>
         </el-row>
@@ -119,3 +117,29 @@ function goToProduct(id) {
 
 onMounted(loadSlides);
 </script>
+
+<style scoped>
+/* Carousel container */
+:deep(.promo-carousel.el-carousel),
+.promo-carousel {
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 24px;
+}
+
+/* Slide title */
+.slide-title {
+  font-size: clamp(20px, 2.8vw, 32px);
+  font-weight: 800;
+  color: #f8fafc;
+  line-height: 1.2;
+  display: block;
+}
+
+/* Tag icon wrapper */
+.tag-icon-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+</style>

@@ -159,6 +159,12 @@ public class NotificationService {
                 .findByTypeOrderByCreatedAtDesc(NotificationType.PURCHASE_REMINDER);
     }
 
+    @Transactional(readOnly = true)
+    public List<Notification> getReturnRequestHistory() {
+        return notificationRepository
+                .findByTypeOrderByCreatedAtDesc(NotificationType.RETURN_REQUEST);
+    }
+
     // =========================================================
     // ADMIN - MANUAL SEND
     // =========================================================

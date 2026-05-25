@@ -5,15 +5,15 @@ import com.retailmanagement.dto.request.SendNotificationRequest;
 import com.retailmanagement.dto.response.NotificationResponse;
 import com.retailmanagement.entity.Notification;
 import com.retailmanagement.security.service.CustomUserDetails;
-import com.retailmanagement.service.CustomerService;
 
 import com.retailmanagement.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -27,7 +27,6 @@ import java.util.stream.Collectors;
 public class NotificationController {
 
     private final NotificationService notificationService;
-    private final CustomerService customerService;
 
     // ================================================================
     // CUSTOMER — thông báo của tôi
@@ -37,7 +36,10 @@ public class NotificationController {
     public ResponseEntity<List<NotificationResponse>> getMyNotifications(
             @RequestParam(required = false, defaultValue = "false") boolean unreadOnly
     ) {
-        Integer customerId = getCurrentCustomerId();
+        Integer customerId = getCurrentCustomerIdOrNull();
+        if (customerId == null) {
+            return ResponseEntity.ok(List.of());
+        }
         List<Notification> notifications = unreadOnly
                 ? notificationService.getUnreadNotifications(customerId)
                 : notificationService.getAllNotifications(customerId);
@@ -48,25 +50,28 @@ public class NotificationController {
 
     @GetMapping("/my/unread-count")
     public ResponseEntity<Map<String, Long>> getUnreadCount() {
-        Integer customerId = getCurrentCustomerId();
+        Integer customerId = getCurrentCustomerIdOrNull();
+        if (customerId == null) {
+            return ResponseEntity.ok(Map.of("unreadCount", 0L));
+        }
         return ResponseEntity.ok(Map.of("unreadCount", notificationService.countUnread(customerId)));
     }
 
     @PutMapping("/{id}/read")
     public ResponseEntity<Void> markAsRead(@PathVariable Long id) {
-        notificationService.markAsRead(id, getCurrentCustomerId());
+        notificationService.markAsRead(id, requireCurrentCustomerId());
         return ResponseEntity.ok().build();
     }
 
     @PutMapping("/read-all")
     public ResponseEntity<Void> markAllAsRead() {
-        notificationService.markAllAsRead(getCurrentCustomerId());
+        notificationService.markAllAsRead(requireCurrentCustomerId());
         return ResponseEntity.ok().build();
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteNotification(@PathVariable Long id) {
-        notificationService.deleteNotification(id, getCurrentCustomerId());
+        notificationService.deleteNotification(id, requireCurrentCustomerId());
         return ResponseEntity.noContent().build();
     }
 
@@ -155,15 +160,32 @@ public class NotificationController {
     // PRIVATE HELPERS
     // ================================================================
 
-    private Integer getCurrentCustomerId() {
+    private Integer getCurrentCustomerIdOrNull() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated()) {
-            throw new RuntimeException("Chưa đăng nhập");
+            return null;
         }
-        CustomUserDetails userDetails = (CustomUserDetails) auth.getPrincipal();
+        Object principal = auth.getPrincipal();
+        if (!(principal instanceof CustomUserDetails userDetails)) {
+            return null;
+        }
+        return userDetails.getCustomerId();
+    }
+
+    private Integer requireCurrentCustomerId() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated()) {
+            throw new AuthenticationCredentialsNotFoundException("Chưa đăng nhập");
+        }
+
+        Object principal = auth.getPrincipal();
+        if (!(principal instanceof CustomUserDetails userDetails)) {
+            throw new AccessDeniedException("Tài khoản này không phải customer");
+        }
+
         Integer customerId = userDetails.getCustomerId();
         if (customerId == null) {
-            throw new RuntimeException("Tài khoản này không phải customer");
+            throw new AccessDeniedException("Tài khoản này không phải customer");
         }
         return customerId;
     }

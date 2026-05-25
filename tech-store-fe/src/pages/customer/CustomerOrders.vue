@@ -1,36 +1,41 @@
 <template>
   <div style="max-width: 1280px; margin: 0 auto; padding: 24px;">
-    <el-card shadow="never">
+    <el-card shadow="never" class="profile-card">
 
-      <!-- Header -->
-      <el-row align="middle" justify="space-between" style="margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
-        <el-space direction="vertical" :size="4">
-          <el-text size="small" type="info" style="text-transform: uppercase; letter-spacing: 0.08em; font-weight: 800;">Khách hàng</el-text>
-          <el-text tag="div" style="font-size: 22px; font-weight: 900; color: #0f172a; line-height: 1.2;">Đơn hàng của tôi</el-text>
-        </el-space>
-        <el-button :loading="loading" plain @click="loadOrders">
-          <el-icon><Refresh /></el-icon> Tải lại
-        </el-button>
-      </el-row>
+      <el-page-header @back="$router.back()" style="margin-bottom: 20px;">
+        <template #content>
+          <el-text tag="span" style="font-size: 20px; font-weight: 700;">Đơn hàng của tôi</el-text>
+        </template>
+        <template #extra>
+          <el-button :loading="loading" @click="loadOrders">
+            <el-icon><Refresh /></el-icon> Tải lại
+          </el-button>
+        </template>
+      </el-page-header>
 
       <el-divider style="margin: 0 0 20px;" />
 
       <el-alert v-if="error" type="error" :title="error" show-icon style="margin-bottom: 20px;" />
 
-      <!-- Stats row -->
-      <el-row :gutter="10" style="margin-bottom: 24px; flex-wrap: wrap;">
+      <!-- Stats row using el-statistic -->
+      <el-row :gutter="12" style="margin-bottom: 24px;">
         <el-col :xs="12" :sm="4" v-for="stat in stats" :key="stat.label">
           <el-card
             shadow="never"
+            class="profile-card hoverable"
             :body-style="{ padding: '12px 16px', textAlign: 'center' }"
-            :style="`background: ${stat.bg}; border-color: ${stat.border}; margin-bottom: 10px;`"
+            :style="`background: var(${stat.bgVar}); border-color: var(${stat.borderVar}); margin-bottom: 10px;`"
           >
-            <el-text :style="`font-size: 22px; font-weight: 900; color: ${stat.color}; display: block; line-height: 1.1;`">
-              {{ stat.value }}
-            </el-text>
-            <el-text size="small" :style="`color: ${stat.subColor}; text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600; margin-top: 3px; display: block;`">
-              {{ stat.label }}
-            </el-text>
+            <el-statistic :value="stat.value">
+              <template #number>
+                <el-text :style="`color: var(${stat.colorVar}); font-size: 22px; font-weight: 900;`">{{ stat.value }}</el-text>
+              </template>
+              <template #title>
+                <el-text size="small" :style="`color: var(${stat.colorVar}); text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600;`">
+                  {{ stat.label }}
+                </el-text>
+              </template>
+            </el-statistic>
           </el-card>
         </el-col>
       </el-row>
@@ -50,7 +55,6 @@
         border
         stripe
         style="width: 100%"
-        :header-cell-style="{ background: 'var(--el-fill-color-light)', color: 'var(--el-text-color-secondary)', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em' }"
       >
         <el-table-column label="Mã đơn" min-width="170">
           <template #default="{ row }">
@@ -90,20 +94,24 @@
 
         <el-table-column label="Thao tác" width="180" align="center" fixed="right">
           <template #default="{ row }">
-            <el-space :size="6" style="justify-content: center; flex-wrap: wrap;">
+            <el-space :size="6" style="justify-content: center;">
               <el-button size="small" type="primary" plain @click="$router.push(`/orders/${row.orderId}`)">
                 <el-icon><View /></el-icon> Chi tiết
               </el-button>
-              <el-button
+              <el-popconfirm
                 v-if="canCancel(row.status)"
-                size="small"
-                type="danger"
-                plain
-                :loading="cancelingId === row.orderId"
-                @click="onCancel(row.orderId)"
+                title="Xác nhận hủy đơn hàng này?"
+                confirm-button-text="Hủy đơn"
+                cancel-button-text="Giữ lại"
+                confirm-button-type="danger"
+                @confirm="onCancel(row.orderId)"
               >
-                Hủy
-              </el-button>
+                <template #reference>
+                  <el-button size="small" type="danger" plain :loading="cancelingId === row.orderId">
+                    Hủy
+                  </el-button>
+                </template>
+              </el-popconfirm>
             </el-space>
           </template>
         </el-table-column>
@@ -117,7 +125,7 @@
 import { computed, onMounted, ref } from "vue";
 import { Refresh, View } from "@element-plus/icons-vue";
 import { ordersApi } from "../../api/orders.api";
-import { ElMessageBox, ElMessage } from "element-plus";
+import { ElMessage } from "element-plus";
 
 const orders      = ref([]);
 const loading     = ref(false);
@@ -140,13 +148,8 @@ async function loadOrders() {
 }
 
 async function onCancel(orderId) {
+  cancelingId.value = orderId;
   try {
-    await ElMessageBox.confirm(
-      "Bạn có chắc muốn hủy đơn hàng này không?",
-      "Xác nhận hủy đơn",
-      { type: "warning", confirmButtonText: "Hủy đơn", cancelButtonText: "Giữ lại" }
-    );
-    cancelingId.value = orderId;
     await ordersApi.cancel(orderId);
     ElMessage.success("Đã hủy đơn hàng thành công");
     await loadOrders();
@@ -159,12 +162,12 @@ async function onCancel(orderId) {
 
 const STATUS_LABELS = {
   PENDING:"Chờ xử lý", CONFIRMED:"Đã xác nhận", PROCESSING:"Đang xử lý",
-  SHIPPING:"Đang giao", DELIVERED:"Đã giao", CANCELLED:"Đã hủy", PAID:"Đã thanh toán",
+  SHIPPING:"Đang giao", DELIVERED:"Đã giao", CANCELLED:"Đã hủy", PAID:"Đã thanh toán",RETURNED:"Đã trả hàng",
 };
 
 const STATUS_TYPES = {
   PENDING:"warning", CONFIRMED:"primary", PROCESSING:"primary",
-  SHIPPING:"primary", DELIVERED:"success", CANCELLED:"danger", PAID:"success",
+  SHIPPING:"primary", DELIVERED:"success", CANCELLED:"danger", PAID:"success",RETURNED:"info",
 };
 
 function statusLabel(s) { return STATUS_LABELS[s] || s; }
@@ -173,11 +176,12 @@ function canCancel(s)   { return ["PENDING","CONFIRMED"].includes(s); }
 function countByStatus(s) { return orders.value.filter(o => o.status === s).length; }
 
 const stats = computed(() => [
-  { label:"Tổng đơn",   value: orders.value.length,                             color:"#2563eb", subColor:"#64748b", bg:"#eff6ff", border:"#bfdbfe" },
-  { label:"Chờ xử lý",  value: countByStatus("PENDING"),                        color:"#d97706", subColor:"#92400e", bg:"#fffbeb", border:"#fde68a" },
-  { label:"Đang xử lý", value: countByStatus("CONFIRMED")+countByStatus("PROCESSING"), color:"#7c3aed", subColor:"#5b21b6", bg:"#f5f3ff", border:"#ddd6fe" },
-  { label:"Đã giao",    value: countByStatus("DELIVERED"),                       color:"#16a34a", subColor:"#14532d", bg:"#f0fdf4", border:"#bbf7d0" },
-  { label:"Đã hủy",     value: countByStatus("CANCELLED"),                       color:"#dc2626", subColor:"#991b1b", bg:"#fff1f2", border:"#fecdd3" },
+  { label:"Tổng đơn",   value: orders.value.length,                                  colorVar:"--el-color-primary",        bgVar:"--el-color-primary-light-9",   borderVar:"--el-color-primary-light-5"  },
+  { label:"Chờ xử lý",  value: countByStatus("PENDING"),                             colorVar:"--el-color-warning",        bgVar:"--el-color-warning-light-9",   borderVar:"--el-color-warning-light-5"  },
+  { label:"Đang xử lý", value: countByStatus("CONFIRMED")+countByStatus("PROCESSING"),colorVar:"--el-color-primary",       bgVar:"--el-color-primary-light-9",   borderVar:"--el-color-primary-light-5"  },
+  { label:"Đã giao",    value: countByStatus("DELIVERED"),                            colorVar:"--el-color-success",        bgVar:"--el-color-success-light-9",   borderVar:"--el-color-success-light-5"  },
+  { label:"Đã hủy",     value: countByStatus("CANCELLED"),                            colorVar:"--el-color-danger",         bgVar:"--el-color-danger-light-9",    borderVar:"--el-color-danger-light-5"   },
+  { label:"Trả hàng",     value: countByStatus("RETURNED"),                            colorVar:"--el-color-info",         bgVar:"--el-color-info-light-9",    borderVar:"--el-color-info-light-5"},
 ]);
 
 function formatDate(date) {
@@ -189,5 +193,3 @@ function formatMoney(value) {
   return Number(value).toLocaleString("vi-VN") + " ₫";
 }
 </script>
-
-<style></style>

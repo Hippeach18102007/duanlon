@@ -2,6 +2,15 @@
   <Analytics />
   <el-container style="height: 100%; overflow: hidden;">
 
+    <!-- ─── Top Bar (Trust Signals) ────────────────────── -->
+    <div v-if="showHeader" style="background-color: var(--el-color-info-light-9); padding: 6px 24px; display: flex; justify-content: flex-end; font-size: 12px; color: var(--el-text-color-regular); border-bottom: 1px solid var(--el-border-color-lighter);">
+      <el-space :size="24">
+        <span style="display: flex; align-items: center; gap: 6px;"><el-icon><Van /></el-icon> Miễn phí giao hàng</span>
+        <span style="display: flex; align-items: center; gap: 6px;"><el-icon><RefreshLeft /></el-icon> Đổi trả trong 30 ngày</span>
+        <span style="display: flex; align-items: center; gap: 6px;"><el-icon><CircleCheck /></el-icon> Bảo hành chính hãng</span>
+      </el-space>
+    </div>
+
     <!-- ─── Header ─────────────────────────────────────── -->
     <el-header v-if="showHeader" height="72px" style="position: sticky; top: 0; z-index: 100; background: rgba(255,255,255,0.92); backdrop-filter: blur(16px); border-bottom: 1px solid var(--el-border-color-light); box-shadow: var(--el-box-shadow-light);">
       <el-row align="middle" justify="space-between" style="height: 100%">
@@ -12,23 +21,54 @@
 
             <!-- Brand -->
             <el-link :underline="false" @click="goHome">
-              <el-space :size="10">
-                <el-avatar :size="36" style="background: #1d4ed8; flex-shrink: 0">
-                  <el-icon :size="16"><Monitor /></el-icon>
-                </el-avatar>
+              <el-space :size="10" align="center">
+                <img src="/logo.png" alt="TechStore Logo" style="height: 36px; object-fit: contain; border-radius: 8px;" />
                 <el-space direction="vertical" :size="1">
-                  <el-text tag="b">Tech Store</el-text>
-                  <el-text size="small" type="info">Laptop · Gaming · Workstation</el-text>
+                  <el-text tag="b" style="font-size: 16px;">TechStore</el-text>
+                  <el-text size="small" type="info" style="font-size: 11px;">Innovation at your fingertips</el-text>
                 </el-space>
               </el-space>
             </el-link>
+
+            <!-- Danh Mục Mega Menu -->
+            <el-popover placement="bottom-start" width="400" trigger="hover" v-if="showSearch">
+              <template #reference>
+                <el-button plain style="border: none; background: transparent; font-weight: 600;">
+                  <el-icon style="margin-right: 4px;"><Menu /></el-icon> Danh mục
+                  <el-icon class="el-icon--right"><ArrowDown /></el-icon>
+                </el-button>
+              </template>
+              <el-row :gutter="20">
+                <el-col :span="12">
+                  <el-text tag="b" type="primary" style="margin-bottom: 12px; display: block;">LAPTOP THEO NHU CẦU</el-text>
+                  <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <el-link :underline="false" @click="applyMegaMenuFilter('categoryName', 'Gaming')">Laptop Gaming</el-link>
+                    <el-link :underline="false" @click="applyMegaMenuFilter('categoryName', 'Đồ Họa')">Laptop Đồ Họa</el-link>
+                    <el-link :underline="false" @click="applyMegaMenuFilter('categoryName', 'Mỏng Nhẹ')">Laptop Mỏng Nhẹ</el-link>
+                    <el-link :underline="false" @click="applyMegaMenuFilter('categoryName', 'Sinh Viên')">Laptop Sinh Viên</el-link>
+                    <el-link :underline="false" @click="applyMegaMenuFilter('categoryName', 'Doanh Nhân')">Laptop Doanh Nhân</el-link>
+                  </div>
+                </el-col>
+                <el-col :span="12">
+                  <el-text tag="b" type="primary" style="margin-bottom: 12px; display: block;">LAPTOP THEO HÃNG</el-text>
+                  <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <el-link :underline="false" @click="applyMegaMenuFilter('brand', 'Apple')">Apple (MacBook)</el-link>
+                    <el-link :underline="false" @click="applyMegaMenuFilter('brand', 'ASUS')">ASUS</el-link>
+                    <el-link :underline="false" @click="applyMegaMenuFilter('brand', 'Lenovo')">Lenovo</el-link>
+                    <el-link :underline="false" @click="applyMegaMenuFilter('brand', 'Dell')">Dell</el-link>
+                    <el-link :underline="false" @click="applyMegaMenuFilter('brand', 'HP')">HP</el-link>
+                  </div>
+                </el-col>
+              </el-row>
+            </el-popover>
 
             <!-- Search -->
             <el-input
               v-if="showSearch"
               v-model="q"
-              placeholder="Tìm laptop, CPU, RAM…"
-              style="width: 310px"
+              :placeholder="dynamicPlaceholder"
+              style="width: 380px"
+              size="large"
               clearable
               @input="emitSearch"
               @clear="() => { q = ''; emitSearch(); }"
@@ -57,18 +97,67 @@
                 </el-tooltip>
 
                 <!-- Thông báo -->
-                <el-tooltip content="Thông báo" placement="bottom">
-                  <el-badge :value="unreadNotificationCount" :max="9" :hidden="unreadNotificationCount === 0">
-                    <el-button :icon="Bell" circle text @click="viewAllNotifications" />
-                  </el-badge>
-                </el-tooltip>
+                <el-popover placement="bottom-end" width="340" trigger="hover">
+                  <template #reference>
+                    <span style="display: inline-block; margin-right: 8px;">
+                      <el-badge :value="unreadNotificationCount" :max="9" :hidden="unreadNotificationCount === 0">
+                        <el-button :icon="Bell" circle text @click="viewAllNotifications" />
+                      </el-badge>
+                    </span>
+                  </template>
+                  <div style="padding: 4px;">
+                    <el-row align="middle" justify="space-between" style="margin-bottom: 12px;">
+                      <el-text tag="b">Thông báo mới</el-text>
+                      <el-button link type="primary" size="small" @click="viewAllNotifications">Xem tất cả</el-button>
+                    </el-row>
+                    
+                    <div v-if="allNotifications.length === 0" style="text-align: center; padding: 20px 0;">
+                      <el-text type="info">Chưa có thông báo nào.</el-text>
+                    </div>
+                    
+                    <div v-else style="display: flex; flex-direction: column; gap: 8px; max-height: 280px; overflow-y: auto; padding-right: 4px;">
+                      <div 
+                        v-for="n in allNotifications.slice(0, 5)" 
+                        :key="n.id" 
+                        style="padding: 10px; border-radius: 8px; cursor: pointer; transition: background 0.2s; display: flex; gap: 12px; align-items: flex-start;"
+                        :style="{ background: n.isRead ? 'transparent' : 'var(--el-color-primary-light-9)' }"
+                        @click="viewAllNotifications"
+                      >
+                        <el-icon :size="20" :color="notifIconColor(n.type)" style="margin-top: 2px;">
+                          <component :is="notifIconComponent(n.type)" />
+                        </el-icon>
+                        <div style="flex: 1;">
+                          <el-text tag="b" style="font-size: 13px; display: block; margin-bottom: 4px; line-height: 1.3;" :type="n.isRead ? 'info' : ''">{{ n.title }}</el-text>
+                          <el-text size="small" type="info" style="font-size: 12px; display: block; line-height: 1.4;" v-html="formatMessage(n.message)"></el-text>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </el-popover>
 
                 <!-- Giỏ hàng -->
-                <el-tooltip content="Giỏ hàng" placement="bottom">
-                  <el-badge :value="cartStore.count" :max="9" :hidden="cartStore.count === 0">
-                    <el-button :icon="ShoppingBag" circle text type="primary" @click="$router.push('/cart')" />
-                  </el-badge>
-                </el-tooltip>
+                <el-popover placement="bottom-end" width="320" trigger="hover">
+                  <template #reference>
+                    <span style="display: inline-block; margin-right: 8px;">
+                      <el-badge :value="cartStore.count" :max="9" :hidden="cartStore.count === 0">
+                        <el-button :icon="ShoppingBag" circle text type="primary" @click="$router.push('/cart')" />
+                      </el-badge>
+                    </span>
+                  </template>
+                  <div style="padding: 8px;">
+                    <el-row align="middle" justify="space-between" style="margin-bottom: 12px;">
+                      <el-text tag="b">Giỏ hàng của bạn</el-text>
+                      <el-text type="info" size="small">{{ cartStore.count }} sản phẩm</el-text>
+                    </el-row>
+                    <el-empty v-if="cartStore.count === 0" description="Giỏ hàng trống" :image-size="60" />
+                    <div v-else>
+                      <el-text size="small" type="info" style="display: block; margin-bottom: 12px;">
+                        Đã có {{ cartStore.count }} sản phẩm trong giỏ hàng. Nhấp vào để xem chi tiết.
+                      </el-text>
+                      <el-button type="primary" style="width: 100%;" @click="$router.push('/cart')">Xem giỏ hàng & Thanh toán</el-button>
+                    </div>
+                  </div>
+                </el-popover>
 
               </template>
 
@@ -79,7 +168,7 @@
               </el-button>
 
               <!-- Authed user dropdown -->
-              <el-dropdown v-if="isAuthed" trigger="click" placement="bottom-end">
+              <el-dropdown v-if="isAuthed" trigger="hover" placement="bottom-end">
                 <el-button text>
                   <el-space :size="8">
                     <el-avatar :size="32">{{ avatarLetter }}</el-avatar>
@@ -203,7 +292,7 @@
 import {
   ArrowDown, Bell, Calendar, Check, Document, Grid, Lock,
   Monitor, Present, Right, Search, ShoppingBag, ShoppingCart, StarFilled,
-  SwitchButton, Timer, Trophy, User,
+  SwitchButton, Timer, Trophy, User, Van, RefreshLeft, CircleCheck, Menu
 } from "@element-plus/icons-vue";
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
@@ -219,6 +308,11 @@ const auth = useAuthStore();
 const cartStore = useCartStore();
 
 const q = ref("");
+const placeholders = ["Tìm laptop gaming...", "Tìm MacBook M3...", "Tìm laptop dưới 20 triệu...", "Tìm theo hãng ASUS, Dell..."];
+const dynamicPlaceholder = ref(placeholders[0]);
+let placeholderIndex = 0;
+let placeholderInterval;
+
 const unreadNotificationCount = ref(0);
 const notificationsDialog = ref(false);
 const allNotifications = ref([]);
@@ -234,7 +328,10 @@ const avatarLetter = computed(() => {
   return (s[0] || "U").toUpperCase();
 });
 
-const showHeader = computed(() => route.meta?.hideHeader !== true);
+const showHeader = computed(() =>
+  route.meta?.hideHeader !== true &&
+  (route.meta?.portal ?? 'customer') === 'customer'
+);
 const showSearch = computed(
   () => route.name === "home" && (route.meta?.portal || "customer") === "customer",
 );
@@ -258,8 +355,25 @@ const mainStyle = computed(() => {
 });
 
 function emitSearch() {
-  window.dispatchEvent(new CustomEvent("products:search", { detail: q.value }));
+  if (route.name !== "home") {
+    router.push({ name: "home" });
+    setTimeout(() => window.dispatchEvent(new CustomEvent("products:search", { detail: q.value })), 100);
+  } else {
+    window.dispatchEvent(new CustomEvent("products:search", { detail: q.value }));
+  }
 }
+
+function applyMegaMenuFilter(type, value) {
+  if (route.name !== "home") {
+    router.push({ name: "home" });
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent("products:filter", { detail: { type, value } }));
+    }, 300);
+  } else {
+    window.dispatchEvent(new CustomEvent("products:filter", { detail: { type, value } }));
+  }
+}
+
 function goHome() {
   if (!isAuthed.value) return router.push("/");
   return isCustomer.value ? router.push("/") : router.push("/system/dashboard");
@@ -305,7 +419,8 @@ function notifToastType(type) {
 async function initShownNotifIds() {
   try {
     const res = await http.get("/api/auth/notifications/my");
-    (res.data || []).forEach(n => shownNotifIds.add(n.id));
+    allNotifications.value = res.data || [];
+    allNotifications.value.forEach(n => shownNotifIds.add(n.id));
   } catch {}
 }
 
@@ -356,6 +471,17 @@ function notifIconComponent(type) {
     SPIN_EXPIRY_WARNING:  Timer,
   }[type] ?? Bell);
 }
+
+function notifIconColor(type) {
+  return ({
+    WELCOME:              "var(--el-color-primary)",
+    BIRTHDAY:             "var(--el-color-danger)",
+    PURCHASE_REMINDER:    "var(--el-color-warning)",
+    WINBACK:              "var(--el-color-success)",
+    VIP_TIER_UPGRADE:     "var(--el-color-warning)",
+    SPIN_EXPIRY_WARNING:  "var(--el-color-danger)"
+  }[type] || "var(--el-color-info)");
+}
 function formatMessage(msg) { return msg ? msg.replace(/\n/g, "<br>") : ""; }
 function formatDate(d) { return new Date(d).toLocaleDateString("vi-VN"); }
 
@@ -383,12 +509,18 @@ onMounted(() => {
   window.addEventListener("auth:logout", onAutoLogout);
   window.addEventListener("notifications:updated", loadNotificationCount);
   window.addEventListener("header:open-notifications", viewAllNotifications);
+
+  placeholderInterval = setInterval(() => {
+    placeholderIndex = (placeholderIndex + 1) % placeholders.length;
+    dynamicPlaceholder.value = placeholders[placeholderIndex];
+  }, 3500);
 });
 onBeforeUnmount(() => {
   window.removeEventListener("auth:logout", onAutoLogout);
   window.removeEventListener("notifications:updated", loadNotificationCount);
   window.removeEventListener("header:open-notifications", viewAllNotifications);
   if (notifInterval) clearInterval(notifInterval);
+  if (placeholderInterval) clearInterval(placeholderInterval);
 });
 </script>
 

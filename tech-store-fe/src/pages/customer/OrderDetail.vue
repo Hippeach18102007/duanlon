@@ -5,7 +5,7 @@
 
       <!-- LEFT COLUMN -->
       <div class="order-left">
-        <el-card shadow="never">
+        <el-card shadow="never" class="profile-card">
           <!-- Header -->
           <el-row align="middle" justify="space-between" style="margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
             <el-space direction="vertical" :size="6">
@@ -65,14 +65,7 @@
             />
           </el-steps>
 
-          <el-alert
-            v-if="detail?.status === 'CANCELLED'"
-            :title="formatCancelReason(detail?.notes)"
-            type="error"
-            show-icon
-            :closable="false"
-            style="margin-bottom: 20px;"
-          />
+          <!-- Removed left-side cancel alert, moved to right column -->
 
           <!-- Skeleton -->
           <el-skeleton v-if="loading" :rows="6" animated />
@@ -81,7 +74,7 @@
             <!-- Info grid -->
             <el-row :gutter="16" style="margin-bottom: 20px;">
               <el-col :xs="24" :sm="12">
-                <el-card shadow="never" style="background: var(--el-fill-color-lighter); height: 100%;">
+                <el-card shadow="never" class="profile-card" style="background: var(--el-fill-color-lighter); height: 100%;">
                   <template #header>
                     <el-space :size="8">
                       <el-icon><User /></el-icon>
@@ -99,7 +92,7 @@
                 </el-card>
               </el-col>
               <el-col :xs="24" :sm="12">
-                <el-card shadow="never" style="background: var(--el-fill-color-lighter); height: 100%;">
+                <el-card shadow="never" class="profile-card" style="background: var(--el-fill-color-lighter); height: 100%;">
                   <template #header>
                     <el-space :size="8">
                       <el-icon><CreditCard /></el-icon>
@@ -185,16 +178,60 @@
       <!-- RIGHT COLUMN -->
       <div class="order-right" v-if="detail">
 
+        <!-- Banner Hủy đơn -->
+        <el-alert
+          v-if="detail?.status === 'CANCELLED'"
+          type="error"
+          :closable="false"
+          show-icon
+          style="margin-bottom: 16px;"
+        >
+          <template #title>
+            <el-space :size="6">
+              <el-icon><CircleCloseFilled /></el-icon>
+              <span style="font-weight: 700;">Đơn hàng đã hủy</span>
+            </el-space>
+          </template>
+          <template #default>
+            <el-space direction="vertical" :size="4">
+              <el-text size="small">Đơn hàng này đã bị hủy và không thể tiếp tục xử lý.</el-text>
+              <el-text size="small" type="info">{{ formatCancelReason(detail?.notes) }}</el-text>
+            </el-space>
+          </template>
+        </el-alert>
+
+        <!-- Banner Hoàn hàng -->
+        <el-alert
+          v-if="isReturned(detail?.status)"
+          type="warning"
+          :closable="false"
+          show-icon
+          style="margin-bottom: 16px;"
+        >
+          <template #title>
+            <el-space :size="6">
+              <el-icon><RefreshLeft /></el-icon>
+              <span style="font-weight: 700;">Đơn hàng hoàn trả</span>
+            </el-space>
+          </template>
+          <template #default>
+            <el-space direction="vertical" :size="4">
+              <el-text size="small">Đơn hàng này đã được ghi nhận hoàn trả (một phần hoặc toàn bộ).</el-text>
+              <el-text size="small" type="info">Vui lòng liên hệ với cửa hàng để biết thêm chi tiết về tình trạng hoàn tiền.</el-text>
+            </el-space>
+          </template>
+        </el-alert>
+
         <!-- Shipping Info Banner (Chưa có bằng chứng) -->
         <el-alert
-          v-if="detail?.status === 'SHIPPING' && !detail?.deliveryProofUrl"
+          v-if="detail?.status === 'SHIPPING' && !detail?.deliveryProofUrl && detail?.channel === 'ONLINE'"
           type="success"
           :closable="false"
           show-icon
           style="margin-bottom: 16px;"
         >
           <template #title>
-                        <el-space :size="6">
+            <el-space :size="6">
               <el-icon><Van /></el-icon>
               <span style="font-weight: 700;">Đơn hàng đang được giao</span>
             </el-space>
@@ -209,8 +246,9 @@
 
         <!-- Proof of Delivery Banner (Shipper đã gửi ảnh) -->
         <el-card
-          v-if="detail?.status === 'SHIPPING' && detail?.deliveryProofUrl"
+          v-if="detail?.status === 'SHIPPING' && detail?.deliveryProofUrl && detail?.channel === 'ONLINE'"
           shadow="never"
+          class="profile-card"
           style="margin-bottom: 16px; border-color: var(--el-color-success); background-color: var(--el-color-success-light-9);"
         >
           <template #header>
@@ -241,52 +279,102 @@
           </el-row>
         </el-card>
 
-        <!-- COD Banner -->
-        <el-alert
-          v-if="detail?.paymentMethod === 'CASH' && detail?.paymentStatus !== 'PAID'"
-          type="info"
-          :closable="false"
-          show-icon
-          style="margin-bottom: 16px;"
-        >
-          <template #title>
-                        <el-space :size="6">
-              <el-icon><Money /></el-icon>
-              <span style="font-weight: 700;">Thanh toán tiền mặt (COD)</span>
-            </el-space>
-          </template>
-          <template #default>
-            <el-space direction="vertical" :size="4">
-              <el-text size="small">Shipper/Thu ngân sẽ thu tiền mặt trực tiếp khi hàng đến tay bạn.</el-text>
-              <el-text size="small" type="info">Bạn <strong>không cần</strong> thao tác thanh toán online. Hệ thống sẽ tự cập nhật sau khi kế toán đối soát.</el-text>
-            </el-space>
-          </template>
-        </el-alert>
+        <!-- Các Banner Thanh toán (Chỉ hiển thị khi đơn chưa hủy, chưa trả và chưa thanh toán) -->
+        <template v-if="detail?.status !== 'CANCELLED' && !isReturned(detail?.status) && detail?.paymentStatus !== 'PAID'">
+          
+          <!-- CASH - ONLINE (COD) -->
+          <el-alert
+            v-if="detail?.paymentMethod === 'CASH' && detail?.channel === 'ONLINE'"
+            type="info"
+            :closable="false"
+            show-icon
+            style="margin-bottom: 16px;"
+          >
+            <template #title>
+              <el-space :size="6">
+                <el-icon><Money /></el-icon>
+                <span style="font-weight: 700;">Thanh toán tiền mặt (COD)</span>
+              </el-space>
+            </template>
+            <template #default>
+              <el-space direction="vertical" :size="4">
+                <el-text size="small">Shipper sẽ thu tiền mặt trực tiếp khi hàng đến tay bạn.</el-text>
+                <el-text size="small" type="info">Bạn <strong>không cần</strong> thao tác thanh toán online. Hệ thống sẽ tự cập nhật sau khi hoàn tất giao hàng.</el-text>
+              </el-space>
+            </template>
+          </el-alert>
 
-        <!-- ✅ FIX Issue 1: Banner chờ xác nhận chuyển khoản -->
-        <el-alert
-          v-if="detail?.paymentMethod === 'TRANSFER' && detail?.paymentStatus !== 'PAID'"
-          type="warning"
-          :closable="false"
-          show-icon
-          style="margin-bottom: 16px;"
-        >
-          <template #title>
-                        <el-space :size="6">
-              <el-icon><Wallet /></el-icon>
-              <span style="font-weight: 700;">Chờ xác nhận chuyển khoản</span>
-            </el-space>
-          </template>
-          <template #default>
-            <el-space direction="vertical" :size="4">
-              <el-text size="small">Vui lòng chuyển khoản theo thông tin QR bên dưới.</el-text>
-              <el-text size="small" type="info">Sau khi chuyển tiền, admin sẽ xác nhận thanh toán. Đơn hàng sẽ được cập nhật tự động.</el-text>
-            </el-space>
-          </template>
-        </el-alert>
+          <!-- CASH - OFFLINE (Thanh toán tại quầy) -->
+          <el-alert
+            v-if="detail?.paymentMethod === 'CASH' && detail?.channel === 'OFFLINE'"
+            type="warning"
+            :closable="false"
+            show-icon
+            style="margin-bottom: 16px;"
+          >
+            <template #title>
+              <el-space :size="6">
+                <el-icon><Money /></el-icon>
+                <span style="font-weight: 700;">Thanh toán tại quầy</span>
+              </el-space>
+            </template>
+            <template #default>
+              <el-space direction="vertical" :size="4">
+                <el-text size="small">Vui lòng thanh toán tiền mặt tại quầy cho thu ngân.</el-text>
+                <el-text size="small" type="info">Đơn hàng sẽ được xác nhận thanh toán sau khi thu ngân nhận đủ tiền.</el-text>
+              </el-space>
+            </template>
+          </el-alert>
+
+          <!-- TRANSFER - ONLINE (VNPay) -->
+          <el-alert
+            v-if="detail?.paymentMethod === 'TRANSFER' && detail?.channel === 'ONLINE'"
+            type="warning"
+            :closable="false"
+            show-icon
+            style="margin-bottom: 16px;"
+          >
+            <template #title>
+              <el-space :size="6">
+                <el-icon><CreditCard /></el-icon>
+                <span style="font-weight: 700;">Thanh toán trực tuyến (VNPay)</span>
+              </el-space>
+            </template>
+            <template #default>
+              <el-space direction="vertical" :size="4">
+                <el-text size="small">Vui lòng hoàn tất thanh toán qua cổng VNPay bằng cách bấm nút "Thanh toán qua VNPay" ở trên.</el-text>
+                <el-text size="small" type="info">Nếu bạn đã thanh toán, xin vui lòng chờ hệ thống cập nhật.</el-text>
+              </el-space>
+            </template>
+          </el-alert>
+
+          <!-- TRANSFER - OFFLINE (Thanh toán qua VNPay — giống ONLINE) -->
+          <el-alert
+            v-if="detail?.paymentMethod === 'TRANSFER' && detail?.channel === 'OFFLINE'"
+            type="warning"
+            :closable="false"
+            show-icon
+            style="margin-bottom: 16px;"
+          >
+            <template #title>
+              <el-space :size="6">
+                <el-icon><CreditCard /></el-icon>
+                <span style="font-weight: 700;">Thanh toán trực tuyến (VNPay)</span>
+              </el-space>
+            </template>
+            <template #default>
+              <el-space direction="vertical" :size="4">
+                <el-text size="small">Vui lòng hoàn tất thanh toán qua cổng VNPay bằng cách bấm nút "Thanh toán qua VNPay" ở trên.</el-text>
+                <el-text size="small" type="info">Nếu bạn đã thanh toán, xin vui lòng chờ hệ thống cập nhật.</el-text>
+              </el-space>
+            </template>
+          </el-alert>
+
+        </template>
+
 
         <!-- Totals -->
-        <el-card shadow="never" style="margin-bottom: 16px;">
+        <el-card shadow="never" class="profile-card" style="margin-bottom: 16px;">
           <template #header><el-text tag="b">Tóm tắt đơn hàng</el-text></template>
           <el-space direction="vertical" fill :size="10" style="width: 100%;">
             <el-row justify="space-between">
@@ -315,7 +403,7 @@
         </el-card>
 
         <!-- Timestamps -->
-        <el-card shadow="never">
+        <el-card shadow="never" class="profile-card">
           <template #header>
             <el-space :size="8">
               <el-icon><Clock /></el-icon>
@@ -468,8 +556,8 @@
 
 <script setup>
 import {
-  Camera, Check, CircleCheck, Clock, Close, CreditCard, Loading, Money, Picture,
-  Refresh, Shop, Ticket, User, Van, Wallet, Warning, SuccessFilled
+  Camera, Check, CircleCheck, CircleCloseFilled, Clock, Close, CreditCard, Loading, Money, Picture,
+  Refresh, RefreshLeft, Shop, Ticket, User, Van, Wallet, Warning, SuccessFilled
 } from "@element-plus/icons-vue";
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";

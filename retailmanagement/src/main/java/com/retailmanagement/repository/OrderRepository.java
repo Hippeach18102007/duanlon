@@ -239,4 +239,20 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             @Param("cancelCutoff") Instant cancelCutoff
     );
 
+    /**
+     * Tìm đơn thanh toán chuyển khoản chưa thanh toán quá 24h để tự động hủy.
+     * Hỗ trợ cả giá trị paymentMethod = TRANSFER và BANK_TRANSFER.
+     */
+    @Query("""
+        SELECT o FROM Order o
+        WHERE o.paymentStatus = 'UNPAID'
+          AND o.status IN ('PENDING', 'PROCESSING')
+          AND o.createdAt <= :cancelCutoff
+          AND COALESCE(UPPER(o.paymentMethod), '') IN ('TRANSFER', 'BANK_TRANSFER')
+        ORDER BY o.createdAt ASC
+    """)
+    List<Order> findTransferOrdersToCancel(
+            @Param("cancelCutoff") Instant cancelCutoff
+    );
+
 }

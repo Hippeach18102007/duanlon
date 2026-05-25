@@ -6,12 +6,19 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.data.jpa.repository.Lock;
+
+import jakarta.persistence.LockModeType;
 
 import java.util.List;
 
 public interface ProductVariantRepository extends JpaRepository<ProductVariant, Integer> {
 
     List<ProductVariant> findByProduct_Id(Integer productId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT v FROM ProductVariant v WHERE v.id = :id")
+    java.util.Optional<ProductVariant> findByIdForUpdate(@Param("id") Integer id);
 
     // Thay thế findAll() trong getAllConflictsBelowCost() và getDashboard()
     // Chỉ lấy các variant có giá bán thực sự thấp hơn giá nhập

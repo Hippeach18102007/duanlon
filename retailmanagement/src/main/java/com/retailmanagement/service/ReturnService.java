@@ -35,6 +35,7 @@ public class ReturnService {
     private final PromotionService promotionService;
     private final SpinWheelService spinWheelService;
     private final PromotionRepository promotionRepository;
+    private final CustomerEventNotificationService customerEventNotificationService;
 
     @Transactional
     public ReturnResponse createReturn(CreateReturnRequest req, Integer userId, MultipartFile image) {
@@ -84,6 +85,8 @@ public class ReturnService {
                 .build();
 
         returnRepository.save(ret);
+
+        customerEventNotificationService.onReturnCreated(ret);
 
         order.setStatus(OrderStatuses.RETURN_REQUESTED);
         orderRepository.save(order);
@@ -234,6 +237,7 @@ public class ReturnService {
         }
 
         emailService.sendReturnApprovedEmail(returnEntity);
+        customerEventNotificationService.onReturnApproved(returnEntity);
         return mapToResponse(returnEntity);
     }
 
@@ -252,6 +256,8 @@ public class ReturnService {
         returnRepository.save(ret);
 
         updateOrderStatusAfterReturn(ret.getOrder());
+
+        customerEventNotificationService.onReturnApproved(ret);
 
         return mapToResponse(ret);
     }
@@ -293,6 +299,8 @@ public class ReturnService {
 
         // 4. ❗ UPDATE ORDER STATUS
         updateOrderStatusAfterReturn(order);
+
+        customerEventNotificationService.onReturnApproved(returnEntity);
     }
 
 

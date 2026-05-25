@@ -31,6 +31,12 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
 
     List<Notification> findByTypeOrderByCreatedAtDesc(NotificationType type);
 
+    boolean existsByCustomerIdAndTypeAndMessageContaining(
+            Integer customerId,
+            NotificationType type,
+            String messagePart
+    );
+
     List<Notification> findByTypeAndCreatedAtBetweenOrderByCreatedAtDesc(
             NotificationType type, LocalDateTime from, LocalDateTime to);
 

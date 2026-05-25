@@ -7,13 +7,13 @@ export const LAST_RESPONSE_KEY = "last_auth_response";
 
 const S = {
   get(key) {
-    return sessionStorage.getItem(key);
+    return localStorage.getItem(key);
   },
   set(key, val) {
-    sessionStorage.setItem(key, val);
+    localStorage.setItem(key, val);
   },
   remove(key) {
-    sessionStorage.removeItem(key);
+    localStorage.removeItem(key);
   },
 };
 

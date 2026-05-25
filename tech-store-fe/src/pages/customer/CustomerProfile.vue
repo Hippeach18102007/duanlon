@@ -6,7 +6,7 @@
       <template v-else-if="customer">
 
         <!-- ── Profile header card ── -->
-        <el-card shadow="never" style="margin-bottom: 16px;">
+        <el-card shadow="never" class="profile-card" style="margin-bottom: 16px;">
           <el-row align="middle" justify="space-between" style="flex-wrap: wrap; gap: 12px;">
             <el-space :size="16" align="center">
               <el-avatar :size="72" style="background: linear-gradient(135deg, #3b82f6, #2563eb); font-size: 28px; font-weight: 800; flex-shrink: 0;">
@@ -44,7 +44,7 @@
               <!-- KPI row -->
               <el-row :gutter="16" style="margin-bottom: 20px;">
                 <el-col :xs="12" :sm="6" v-for="kpi in kpiCards" :key="kpi.label">
-                  <el-card shadow="never" :body-style="{ padding: '18px 20px' }" :style="`background: ${kpi.bg}; border-color: ${kpi.border}; margin-bottom: 10px;`">
+                  <el-card shadow="never" class="profile-card hoverable" :body-style="{ padding: '18px 20px' }" :style="`background: ${kpi.bg}; border-color: ${kpi.border}; margin-bottom: 10px;`">
                     <el-space :size="14" align="center">
                       <el-icon :size="28" :style="`color: ${kpi.color};`"><component :is="kpi.icon" /></el-icon>
                       <el-space direction="vertical" :size="2">
@@ -59,7 +59,7 @@
               <!-- VIP Journey + Spin -->
               <el-row :gutter="16" style="margin-bottom: 20px;">
                 <el-col :xs="24" :md="14">
-                  <el-card shadow="never">
+                  <el-card shadow="never" class="profile-card">
                     <template #header>
                       <el-space :size="8">
                         <el-icon :size="20" style="color: #f59e0b;"><Trophy /></el-icon>
@@ -102,8 +102,9 @@
                         v-for="m in myDashboard.vipJourney?.milestones"
                         :key="m.tier"
                         shadow="never"
+                        class="profile-card hoverable"
                         :body-style="{ padding: '10px 14px' }"
-                        :style="m.achieved ? 'background: var(--el-color-success-light-9); border-color: var(--el-color-success-light-5);' : 'background: var(--el-fill-color-lighter);'"
+                        :style="m.achieved ? 'background: var(--el-color-success-light-9); border-color: var(--el-color-success-light-5);' : 'background: var(--el-fill-color-lighter); border-color: var(--el-border-color-lighter);'"
                       >
                         <el-row align="middle" justify="space-between">
                           <el-space :size="10" align="center">
@@ -122,7 +123,7 @@
                 </el-col>
 
                 <el-col :xs="24" :md="10">
-                  <el-card shadow="never">
+                  <el-card shadow="never" class="profile-card">
                     <template #header>
                       <el-space :size="8">
                         <el-icon :size="20" style="color: #67c23a;"><Trophy /></el-icon>
@@ -141,7 +142,7 @@
 
                     <el-row :gutter="12" style="margin-bottom: 14px;">
                       <el-col :span="12">
-                        <el-card shadow="never" :body-style="{ padding: '10px', textAlign: 'center' }" style="background: var(--el-fill-color-lighter);">
+                        <el-card shadow="never" class="profile-card hoverable" :body-style="{ padding: '10px', textAlign: 'center' }" style="background: var(--el-fill-color-lighter); border-color: var(--el-border-color-lighter);">
                           <el-text tag="div" :type="myDashboard.spinWheel?.canSpin ? 'success' : 'info'" style="font-weight: 700;">
                             {{ myDashboard.spinWheel?.canSpin ? '✓ Sẵn sàng' : '✗ Chưa thể' }}
                           </el-text>
@@ -149,7 +150,7 @@
                         </el-card>
                       </el-col>
                       <el-col :span="12">
-                        <el-card shadow="never" :body-style="{ padding: '10px', textAlign: 'center' }" style="background: var(--el-fill-color-lighter);">
+                        <el-card shadow="never" class="profile-card hoverable" :body-style="{ padding: '10px', textAlign: 'center' }" style="background: var(--el-fill-color-lighter); border-color: var(--el-border-color-lighter);">
                           <el-text tag="div" style="font-weight: 700; font-size: 18px;">{{ myDashboard.spinWheel?.spinsRemaining || 0 }}</el-text>
                           <el-text size="small" type="info">Lượt còn lại</el-text>
                         </el-card>
@@ -186,7 +187,7 @@
               <el-row :gutter="16" style="margin-bottom: 20px;">
                 <!-- Recent Payments -->
                 <el-col :xs="24" :md="12">
-                  <el-card shadow="never">
+                  <el-card shadow="never" class="profile-card">
                     <template #header>
                       <el-row align="middle" justify="space-between">
                         <el-space :size="8"><el-icon style="color: #409eff;"><CreditCard /></el-icon><el-text tag="b">Giao dịch gần đây</el-text></el-space>
@@ -216,7 +217,7 @@
 
                 <!-- Recent Loyalty -->
                 <el-col :xs="24" :md="12">
-                  <el-card shadow="never">
+                  <el-card shadow="never" class="profile-card">
                     <template #header>
                       <el-row align="middle" justify="space-between">
                         <el-space :size="8"><el-icon style="color: #f59e0b;"><Star /></el-icon><el-text tag="b">Điểm gần đây</el-text></el-space>
@@ -249,7 +250,7 @@
               <!-- Recent Promotions -->
               <el-row v-if="myDashboard.recentPromotions?.length" :gutter="16">
                 <el-col :xs="24">
-                  <el-card shadow="never">
+                  <el-card shadow="never" class="profile-card">
                     <template #header>
                       <el-row align="middle" justify="space-between">
                         <el-space :size="8"><el-icon style="color: #9333ea;"><Ticket /></el-icon><el-text tag="b">Ưu đãi gần đây</el-text></el-space>
@@ -258,7 +259,7 @@
                     </template>
                     <el-row :gutter="12">
                       <el-col v-for="p in myDashboard.recentPromotions" :key="`dash-promo-${p.orderId}-${p.promotionCode}`" :xs="24" :sm="12" :md="8">
-                        <el-card shadow="never" :body-style="{ padding: '12px' }" style="background: var(--el-fill-color-lighter); margin-bottom: 10px;">
+                        <el-card shadow="never" class="profile-card hoverable" :body-style="{ padding: '12px' }" style="background: var(--el-fill-color-lighter); margin-bottom: 10px; border-color: var(--el-border-color-lighter);">
                           <el-row align="middle" justify="space-between">
                             <el-space :size="10">
                               <el-icon :style="`color: ${p.type === 'SPIN_WHEEL' ? '#67c23a' : '#9333ea'};`">
@@ -294,7 +295,7 @@
             <el-row :gutter="16">
               <el-col :xs="24" :lg="8">
                 <!-- Loyalty points -->
-                <el-card shadow="never" style="margin-bottom: 14px;">
+                <el-card shadow="never" class="profile-card" style="margin-bottom: 14px;">
                   <template #header>
                     <el-space :size="8"><el-icon style="color: #f59e0b;"><Star /></el-icon><el-text tag="b">Điểm tích lũy</el-text></el-space>
                   </template>
@@ -310,7 +311,7 @@
                 </el-card>
 
                 <!-- Discount -->
-                <el-card shadow="never" style="margin-bottom: 14px; background: linear-gradient(135deg, #16a34a, #15803d); border: none;">
+                <el-card shadow="never" class="profile-card hoverable" style="margin-bottom: 14px; background: linear-gradient(135deg, var(--el-color-success), var(--el-color-success-dark-2)); border: none;">
                   <template #header>
                     <el-space :size="8"><el-icon style="color: #fff;"><Present /></el-icon><el-text style="color: #fff; font-weight: 700;">Ưu đãi của bạn</el-text></el-space>
                   </template>
@@ -319,7 +320,7 @@
                 </el-card>
 
                 <!-- Total spent -->
-                <el-card shadow="never">
+                <el-card shadow="never" class="profile-card">
                   <template #header>
                     <el-space :size="8"><el-icon style="color: #9333ea;"><Wallet /></el-icon><el-text tag="b">Tổng chi tiêu</el-text></el-space>
                   </template>
@@ -329,7 +330,7 @@
 
               <el-col :xs="24" :lg="16">
                 <!-- Personal info form -->
-                <el-card shadow="never" style="margin-bottom: 14px;">
+                <el-card shadow="never" class="profile-card" style="margin-bottom: 14px;">
                   <template #header><el-text tag="b" style="font-size: 18px;">Thông tin cá nhân</el-text></template>
                   <el-form label-position="top" :model="formData">
                     <el-row :gutter="16">
@@ -374,7 +375,7 @@
                 </el-card>
 
                 <!-- Account info -->
-                <el-card shadow="never">
+                <el-card shadow="never" class="profile-card">
                   <template #header><el-text tag="b" style="font-size: 18px;">Thông tin tài khoản</el-text></template>
                   <el-row :gutter="16">
                     <el-col :xs="24" :md="12">
@@ -397,21 +398,21 @@
           <el-tab-pane label="Lịch sử điểm" name="loyalty">
             <el-row :gutter="16" style="margin-bottom: 16px;">
               <el-col :xs="24" :sm="8">
-                <el-card shadow="never" style="background: var(--el-color-success-light-9); border-color: var(--el-color-success-light-5); margin-bottom: 10px;">
+                <el-card shadow="never" class="profile-card hoverable" style="background: var(--el-color-success-light-9); border-color: var(--el-color-success-light-5); margin-bottom: 10px;">
                   <el-statistic title="Tổng điểm cộng" :value="loyaltyStats.totalEarned">
                     <template #number><el-text type="success" style="font-size: 26px; font-weight: 900;">+{{ loyaltyStats.totalEarned }}</el-text></template>
                   </el-statistic>
                 </el-card>
               </el-col>
               <el-col :xs="24" :sm="8">
-                <el-card shadow="never" style="background: var(--el-color-warning-light-9); border-color: var(--el-color-warning-light-5); margin-bottom: 10px;">
+                <el-card shadow="never" class="profile-card hoverable" style="background: var(--el-color-warning-light-9); border-color: var(--el-color-warning-light-5); margin-bottom: 10px;">
                   <el-statistic title="Tổng điểm trừ" :value="loyaltyStats.totalDeducted">
                     <template #number><el-text type="warning" style="font-size: 26px; font-weight: 900;">{{ loyaltyStats.totalDeducted }}</el-text></template>
                   </el-statistic>
                 </el-card>
               </el-col>
               <el-col :xs="24" :sm="8">
-                <el-card shadow="never" style="margin-bottom: 10px;">
+                <el-card shadow="never" class="profile-card hoverable" style="margin-bottom: 10px;">
                   <el-statistic title="Giao dịch" :value="loyaltyStats.totalTransactions">
                     <template #number><el-text style="font-size: 26px; font-weight: 900;">{{ loyaltyStats.totalTransactions }}</el-text></template>
                   </el-statistic>
@@ -419,7 +420,7 @@
               </el-col>
             </el-row>
 
-            <el-card shadow="never">
+            <el-card shadow="never" class="profile-card">
               <el-row align="top" justify="space-between" style="margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
                 <el-space direction="vertical" :size="6">
                   <el-space :size="8"><el-icon><TrendCharts /></el-icon><el-text tag="b">Lịch sử giao dịch điểm</el-text></el-space>
@@ -447,98 +448,117 @@
                 <el-button type="primary" v-if="hasActiveHistoryFilters" @click="clearHistoryFilters">Xóa bộ lọc</el-button>
               </el-empty>
 
-              <el-timeline v-else>
-                <el-timeline-item
-                  v-for="item in filteredLoyaltyHistory"
-                  :key="item.id"
-                  :timestamp="formatDateTime(item.createdAt)"
-                  placement="top"
-                  :type="getTimelineType(item.transactionType)"
+              <template v-else>
+                <el-table
+                  :data="paginatedLoyaltyHistory"
+                  stripe
+                  size="small"
+                  style="width: 100%;"
+                  :row-style="({ row }) => `border-left: 3px solid ${getTransactionIconColor(row.transactionType)};`"
                 >
-                  <el-card
-                    shadow="never"
-                    :body-style="{ padding: '14px 16px' }"
-                    :style="`border-left: 4px solid ${getTransactionIconColor(item.transactionType)};`"
-                  >
-                    <el-row align="top" :gutter="12">
-                      <el-col flex="none">
-                        <el-avatar :size="40" :style="`background: transparent; border: 1px solid ${getTransactionIconColor(item.transactionType)};`">
-                          <el-icon :size="20" :style="`color: ${getTransactionIconColor(item.transactionType)};`">
-                            <component :is="getTransactionIcon(item.transactionType)" />
-                          </el-icon>
-                        </el-avatar>
-                      </el-col>
-                      <el-col flex="1">
-                        <el-space :size="8" style="margin-bottom: 6px; flex-wrap: wrap;">
-                          <el-tag :type="getTransactionTagType(item.transactionType)" effect="dark">{{ item.transactionTypeDisplay }}</el-tag>
-                          <el-text size="small" type="info" v-if="item.reason">{{ item.reason }}</el-text>
-                        </el-space>
-                        <el-text tag="div" style="margin-bottom: 6px;">{{ item.note }}</el-text>
-                        <el-space v-if="item.tierBefore || item.tierAfter" :size="6" align="center">
-                          <el-tag size="small" :type="getTierTagType(item.tierBefore)" effect="plain">{{ item.tierBeforeDisplay || 'Member' }}</el-tag>
-                          <el-icon><Right /></el-icon>
-                          <el-tag size="small" :type="getTierTagType(item.tierAfter)" effect="dark">{{ item.tierAfterDisplay || 'Member' }}</el-tag>
-                        </el-space>
-                        <div v-if="item.referenceType && item.referenceId" style="margin-top: 8px;">
-                          <el-button size="small" type="primary" plain round @click="viewOrderBill(item.referenceId, item.pointsDelta)">
-                            <el-icon><ShoppingCart /></el-icon> Đơn hàng #{{ item.referenceId }}
-                          </el-button>
-                        </div>
-                      </el-col>
-                      <el-col flex="none">
-                        <el-tag
-                          :type="item.pointsDelta > 0 ? 'success' : 'warning'"
-                          effect="dark"
-                          style="font-size: 15px; font-weight: 800; height: auto; padding: 8px 12px;"
-                        >
-                          {{ item.pointsDelta > 0 ? '+' : '' }}{{ Math.abs(item.pointsDelta) }}<br><span style="font-size: 11px; font-weight: 500;">điểm</span>
-                        </el-tag>
-                      </el-col>
-                    </el-row>
-                  </el-card>
-                </el-timeline-item>
-              </el-timeline>
+                  <el-table-column label="Thời gian" width="145">
+                    <template #default="{ row }">
+                      <el-text size="small" type="info">{{ formatDateTime(row.createdAt) }}</el-text>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="Loại" width="110">
+                    <template #default="{ row }">
+                      <el-tag :type="getTransactionTagType(row.transactionType)" size="small" effect="dark">{{ row.transactionTypeDisplay }}</el-tag>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="Nội dung" min-width="200">
+                    <template #default="{ row }">
+                      <el-text tag="div" size="small">{{ row.note }}</el-text>
+                      <el-space v-if="row.tierBefore || row.tierAfter" :size="4" align="center" style="margin-top: 2px;">
+                        <el-tag size="small" :type="getTierTagType(row.tierBefore)" effect="plain">{{ row.tierBeforeDisplay || 'Member' }}</el-tag>
+                        <el-icon :size="12"><Right /></el-icon>
+                        <el-tag size="small" :type="getTierTagType(row.tierAfter)" effect="dark">{{ row.tierAfterDisplay || 'Member' }}</el-tag>
+                      </el-space>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="Điểm" width="90" align="right">
+                    <template #default="{ row }">
+                      <el-text :type="row.pointsDelta > 0 ? 'success' : 'warning'" style="font-weight: 700; font-size: 14px;">
+                        {{ row.pointsDelta > 0 ? '+' : '' }}{{ row.pointsDelta }}
+                      </el-text>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="Đơn hàng" width="120" align="center">
+                    <template #default="{ row }">
+                      <el-button v-if="row.referenceId" size="small" type="primary" text @click="viewOrderBill(row.referenceId, row.pointsDelta)">
+                        #{{ row.referenceId }}
+                      </el-button>
+                      <el-text v-else size="small" type="info">—</el-text>
+                    </template>
+                  </el-table-column>
+                </el-table>
+                <el-row justify="center" style="margin-top: 16px;">
+                  <el-pagination
+                    v-model:current-page="loyaltyCurrentPage"
+                    v-model:page-size="loyaltyPageSize"
+                    :page-sizes="[10, 20, 50]"
+                    :total="filteredLoyaltyHistory.length"
+                    layout="total, sizes, prev, pager, next"
+                    small
+                  />
+                </el-row>
+              </template>
             </el-card>
           </el-tab-pane>
 
           <!-- TAB: LỊCH SỬ THĂNG HẠNG -->
           <el-tab-pane label="Lịch sử thăng hạng" name="tier">
-            <el-card shadow="never">
+            <el-card shadow="never" class="profile-card">
               <el-row align="middle" justify="space-between" style="margin-bottom: 16px;">
                 <el-space :size="8"><el-icon><Trophy /></el-icon><el-text tag="b">Lịch sử thay đổi hạng VIP</el-text></el-space>
                 <el-button @click="loadTierHistory" :loading="tierLoading"><el-icon><Refresh /></el-icon> Tải lại</el-button>
               </el-row>
               <el-skeleton v-if="tierLoading" :rows="5" animated />
               <el-empty v-else-if="!tierHistory.length" description="Chưa có lịch sử thay đổi hạng" />
-              <el-space v-else direction="vertical" fill :size="12" style="width: 100%;">
-                <el-card
-                  v-for="item in tierHistory"
-                  :key="item.id"
-                  shadow="never"
-                  :body-style="{ padding: '16px' }"
-                  :style="`border-left: 4px solid ${item.transactionType === 'TIER_UPGRADE' ? 'var(--el-color-success)' : 'var(--el-color-danger)'};`"
+              <template v-else>
+                <el-table
+                  :data="paginatedTierHistory"
+                  stripe
+                  size="small"
+                  style="width: 100%;"
+                  :row-style="({ row }) => `border-left: 3px solid ${row.transactionType === 'TIER_UPGRADE' ? 'var(--el-color-success)' : 'var(--el-color-danger)'};`"
                 >
-                  <el-row align="middle" :gutter="12">
-                    <el-col flex="none">
-                      <el-icon :size="28" :style="`color: ${item.transactionType === 'TIER_UPGRADE' ? 'var(--el-color-success)' : 'var(--el-color-danger)'};`">
-                        <component :is="item.transactionType === 'TIER_UPGRADE' ? 'TopRight' : 'BottomRight'" />
-                      </el-icon>
-                    </el-col>
-                    <el-col flex="1">
-                      <el-row align="middle" justify="space-between" style="margin-bottom: 8px;">
-                        <el-tag :type="item.transactionType === 'TIER_UPGRADE' ? 'success' : 'danger'" effect="dark">{{ item.transactionTypeDisplay }}</el-tag>
-                        <el-text size="small" type="info">{{ formatDateTime(item.createdAt) }}</el-text>
-                      </el-row>
-                      <el-space :size="8" align="center" style="margin-bottom: 6px;">
-                        <el-tag size="large" :type="getTierTagType(item.tierBefore)" effect="dark">{{ item.tierBeforeDisplay || 'Member' }}</el-tag>
-                        <el-icon :size="16"><Right /></el-icon>
-                        <el-tag size="large" :type="getTierTagType(item.tierAfter)" effect="dark">{{ item.tierAfterDisplay || 'Member' }}</el-tag>
+                  <el-table-column label="Thời gian" width="145">
+                    <template #default="{ row }">
+                      <el-text size="small" type="info">{{ formatDateTime(row.createdAt) }}</el-text>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="Loại" width="110">
+                    <template #default="{ row }">
+                      <el-tag :type="row.transactionType === 'TIER_UPGRADE' ? 'success' : 'danger'" size="small" effect="dark">{{ row.transactionTypeDisplay }}</el-tag>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="Thay đổi hạng" width="220">
+                    <template #default="{ row }">
+                      <el-space :size="6" align="center">
+                        <el-tag :type="getTierTagType(row.tierBefore)" size="small" effect="dark">{{ row.tierBeforeDisplay || 'Member' }}</el-tag>
+                        <el-icon :size="12"><Right /></el-icon>
+                        <el-tag :type="getTierTagType(row.tierAfter)" size="small" effect="dark">{{ row.tierAfterDisplay || 'Member' }}</el-tag>
                       </el-space>
-                      <el-text size="small" type="info">{{ item.note }}</el-text>
-                    </el-col>
-                  </el-row>
-                </el-card>
-              </el-space>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="Ghi chú" min-width="180">
+                    <template #default="{ row }">
+                      <el-text size="small" type="info">{{ row.note || '—' }}</el-text>
+                    </template>
+                  </el-table-column>
+                </el-table>
+                <el-row justify="center" style="margin-top: 16px;">
+                  <el-pagination
+                    v-model:current-page="tierCurrentPage"
+                    v-model:page-size="tierPageSize"
+                    :page-sizes="[10, 20, 50]"
+                    :total="tierHistory.length"
+                    layout="total, sizes, prev, pager, next"
+                    small
+                  />
+                </el-row>
+              </template>
             </el-card>
           </el-tab-pane>
 
@@ -548,21 +568,21 @@
 
             <el-row :gutter="16" style="margin-bottom: 16px;">
               <el-col :xs="24" :sm="8">
-                <el-card shadow="never" style="margin-bottom: 10px;">
+                <el-card shadow="never" class="profile-card hoverable" style="margin-bottom: 10px;">
                   <el-statistic title="Tổng ưu đãi" :value="promoStats.total">
                     <template #number><el-text style="font-size: 26px; font-weight: 900;">{{ promoStats.total }}</el-text></template>
                   </el-statistic>
                 </el-card>
               </el-col>
               <el-col :xs="24" :sm="8">
-                <el-card shadow="never" style="background: var(--el-color-success-light-9); border-color: var(--el-color-success-light-5); margin-bottom: 10px;">
+                <el-card shadow="never" class="profile-card hoverable" style="background: var(--el-color-success-light-9); border-color: var(--el-color-success-light-5); margin-bottom: 10px;">
                   <el-statistic title="Đã sử dụng" :value="promoStats.used">
                     <template #number><el-text type="success" style="font-size: 26px; font-weight: 900;">{{ promoStats.used }}</el-text></template>
                   </el-statistic>
                 </el-card>
               </el-col>
               <el-col :xs="24" :sm="8">
-                <el-card shadow="never" style="background: var(--el-color-primary-light-9); border-color: var(--el-color-primary-light-5); margin-bottom: 10px;">
+                <el-card shadow="never" class="profile-card hoverable" style="background: var(--el-color-primary-light-9); border-color: var(--el-color-primary-light-5); margin-bottom: 10px;">
                   <el-statistic title="Tổng tiết kiệm">
                     <template #number><el-text type="primary" style="font-size: 22px; font-weight: 900;">{{ formatCurrencyShort(promoStats.totalSaved) }}</el-text></template>
                   </el-statistic>
@@ -570,7 +590,7 @@
               </el-col>
             </el-row>
 
-            <el-card shadow="never">
+            <el-card shadow="never" class="profile-card">
               <el-row align="top" justify="space-between" style="margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
                 <el-space :size="8"><el-icon><Ticket /></el-icon><el-text tag="b">Danh sách ưu đãi đã nhận</el-text></el-space>
                 <el-space wrap :size="8">
@@ -591,50 +611,70 @@
               <el-skeleton v-if="promoLoading" :rows="5" animated />
               <el-empty v-else-if="!filteredPromoHistory.length" description="Không có ưu đãi nào" />
 
-              <el-space v-else direction="vertical" fill :size="12" style="width: 100%;">
-                <el-card
-                  v-for="item in filteredPromoHistory"
-                  :key="`${item.type}-${item.orderId}-${item.promotionCode}`"
-                  shadow="never"
-                  :body-style="{ padding: '14px 16px' }"
-                  :style="`border-left: 4px solid ${item.type === 'SPIN_WHEEL' ? 'var(--el-color-success)' : 'var(--el-color-primary)'};`"
+              <template v-else>
+                <el-table
+                  :data="paginatedPromoHistory"
+                  stripe
+                  size="small"
+                  style="width: 100%;"
+                  :row-style="({ row }) => `border-left: 3px solid ${row.type === 'SPIN_WHEEL' ? 'var(--el-color-success)' : 'var(--el-color-primary)'};`"
                 >
-                  <el-row align="middle" :gutter="12">
-                    <el-col flex="none">
-                      <el-avatar :size="44" :style="`background: ${item.type === 'SPIN_WHEEL' ? 'var(--el-color-success-light-8)' : 'var(--el-color-primary-light-8)'};`">
-                        <el-icon :size="22" :style="`color: ${item.type === 'SPIN_WHEEL' ? 'var(--el-color-success)' : 'var(--el-color-primary)'};`">
-                          <component :is="item.type === 'SPIN_WHEEL' ? 'Trophy' : 'Ticket'" />
-                        </el-icon>
-                      </el-avatar>
-                    </el-col>
-                    <el-col flex="1">
-                      <el-space :size="6" style="margin-bottom: 4px; flex-wrap: wrap;">
-                        <el-tag :type="item.type === 'SPIN_WHEEL' ? 'success' : 'primary'" effect="dark" size="small">{{ item.type === 'SPIN_WHEEL' ? '🎡 Vòng quay' : '🎟 Mã KM' }}</el-tag>
-                        <el-tag :type="getPromoStatusTagType(item.status)" size="small">{{ item.status }}</el-tag>
-                        <el-tag type="info" effect="plain" size="small" v-if="item.type === 'PROMOTION_CODE'">{{ item.promotionCode }}</el-tag>
-                      </el-space>
-                      <el-text tag="div" style="font-weight: 700; margin-bottom: 4px;">{{ item.promotionName }}</el-text>
-                      <el-space wrap :size="12">
-                        <el-text size="small"><el-icon style="color: #67c23a;"><Money /></el-icon> Giảm: <el-text size="small" type="success" style="font-weight: 700;">{{ item.discountType === 'PERCENT' || item.discountType === 'percent' ? `${item.discountValue}%` : formatCurrency(item.discountValue) }}</el-text></el-text>
-                        <el-text size="small" v-if="item.discountTotal"><el-icon style="color: #409eff;"><Wallet /></el-icon> Tiết kiệm: <el-text size="small" type="primary" style="font-weight: 700;">{{ formatCurrency(item.discountTotal) }}</el-text></el-text>
-                        <el-text size="small" type="info" v-if="item.expiresAt"><el-icon><Clock /></el-icon> HSD: {{ formatDate(item.expiresAt) }}</el-text>
-                        <el-text size="small" type="info" v-if="item.usedAt"><el-icon><Timer /></el-icon> {{ item.status === 'Đã sử dụng' ? 'Dùng lúc' : 'Nhận lúc' }}: {{ formatDateTime(item.usedAt) }}</el-text>
-                      </el-space>
-                      <div v-if="item.orderId" style="margin-top: 8px;">
-                        <el-button size="small" type="primary" plain round @click="viewOrderBill(item.orderId, 0)">
-                          <el-icon><ShoppingCart /></el-icon> Xem đơn #{{ item.orderId }}
-                        </el-button>
-                      </div>
-                    </el-col>
-                    <el-col flex="none" style="text-align: center;">
-                      <el-text :type="item.type === 'SPIN_WHEEL' ? 'success' : 'primary'" style="font-size: 24px; font-weight: 900; display: block;">
-                        {{ item.discountType === 'PERCENT' || item.discountType === 'percent' ? `${item.discountValue}%` : formatCurrencyShort(item.discountValue) }}
+                  <el-table-column label="Loại" width="100">
+                    <template #default="{ row }">
+                      <el-tag :type="row.type === 'SPIN_WHEEL' ? 'success' : 'primary'" size="small" effect="dark">
+                        {{ row.type === 'SPIN_WHEEL' ? 'Spin' : 'Mã KM' }}
+                      </el-tag>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="Mã / Tên" min-width="180">
+                    <template #default="{ row }">
+                      <el-text tag="div" size="small" style="font-weight: 600;">{{ row.promotionName }}</el-text>
+                      <el-tag v-if="row.promotionCode" type="info" effect="plain" size="small">{{ row.promotionCode }}</el-tag>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="Giảm giá" width="110" align="right">
+                    <template #default="{ row }">
+                      <el-text :type="row.type === 'SPIN_WHEEL' ? 'success' : 'primary'" style="font-weight: 700;">
+                        {{ row.discountType === 'PERCENT' || row.discountType === 'percent' ? `${row.discountValue}%` : formatCurrencyShort(row.discountValue) }}
                       </el-text>
-                      <el-text size="small" type="info">giảm giá</el-text>
-                    </el-col>
-                  </el-row>
-                </el-card>
-              </el-space>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="Tiết kiệm" width="120" align="right">
+                    <template #default="{ row }">
+                      <el-text v-if="row.discountTotal" type="primary" size="small" style="font-weight: 600;">{{ formatCurrencyShort(row.discountTotal) }}</el-text>
+                      <el-text v-else size="small" type="info">—</el-text>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="Trạng thái" width="120">
+                    <template #default="{ row }">
+                      <el-tag :type="getPromoStatusTagType(row.status)" size="small">{{ row.status }}</el-tag>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="Ngày dùng / nhận" width="145">
+                    <template #default="{ row }">
+                      <el-text size="small" type="info">{{ row.usedAt ? formatDateTime(row.usedAt) : '—' }}</el-text>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="Đơn hàng" width="110" align="center">
+                    <template #default="{ row }">
+                      <el-button v-if="row.orderId" size="small" type="primary" text @click="viewOrderBill(row.orderId, 0)">
+                        #{{ row.orderId }}
+                      </el-button>
+                      <el-text v-else size="small" type="info">—</el-text>
+                    </template>
+                  </el-table-column>
+                </el-table>
+                <el-row justify="center" style="margin-top: 16px;">
+                  <el-pagination
+                    v-model:current-page="promoCurrentPage"
+                    v-model:page-size="promoPageSize"
+                    :page-sizes="[10, 20, 50]"
+                    :total="filteredPromoHistory.length"
+                    layout="total, sizes, prev, pager, next"
+                    small
+                  />
+                </el-row>
+              </template>
             </el-card>
           </el-tab-pane>
 
@@ -672,21 +712,21 @@
             <template v-else>
               <el-row :gutter="16" style="margin-bottom: 16px;">
                 <el-col :xs="24" :sm="8">
-                  <el-card shadow="never" style="background: var(--el-color-success-light-9); border-color: var(--el-color-success-light-5); margin-bottom: 10px;">
+                  <el-card shadow="never" class="profile-card hoverable" style="background: var(--el-color-success-light-9); border-color: var(--el-color-success-light-5); margin-bottom: 10px;">
                     <el-statistic title="Tổng điểm cộng">
                       <template #number><el-text type="success" style="font-size: 26px; font-weight: 900;">+{{ summaryTotals.earned.toLocaleString() }}</el-text></template>
                     </el-statistic>
                   </el-card>
                 </el-col>
                 <el-col :xs="24" :sm="8">
-                  <el-card shadow="never" style="background: var(--el-color-warning-light-9); border-color: var(--el-color-warning-light-5); margin-bottom: 10px;">
+                  <el-card shadow="never" class="profile-card hoverable" style="background: var(--el-color-warning-light-9); border-color: var(--el-color-warning-light-5); margin-bottom: 10px;">
                     <el-statistic title="Tổng điểm trừ">
                       <template #number><el-text type="warning" style="font-size: 26px; font-weight: 900;">{{ summaryTotals.deducted.toLocaleString() }}</el-text></template>
                     </el-statistic>
                   </el-card>
                 </el-col>
                 <el-col :xs="24" :sm="8">
-                  <el-card shadow="never" style="margin-bottom: 10px;">
+                  <el-card shadow="never" class="profile-card hoverable" style="margin-bottom: 10px;">
                     <el-statistic title="Net điểm">
                       <template #number>
                         <el-text :type="summaryTotals.net >= 0 ? 'success' : 'danger'" style="font-size: 26px; font-weight: 900;">
@@ -698,7 +738,7 @@
                 </el-col>
               </el-row>
 
-              <el-card shadow="never">
+              <el-card shadow="never" class="profile-card">
                 <template #header>
                   <el-text tag="b">Chi tiết {{ summaryMode === 'weekly' ? 'theo tuần' : 'theo tháng' }}</el-text>
                 </template>
@@ -740,21 +780,21 @@
           <el-tab-pane label="Lịch sử giao dịch" name="payments">
             <el-row :gutter="16" style="margin-bottom: 16px;">
               <el-col :xs="24" :sm="8">
-                <el-card shadow="never" style="background: var(--el-color-success-light-9); border-color: var(--el-color-success-light-5); margin-bottom: 10px;">
+                <el-card shadow="never" class="profile-card hoverable" style="background: var(--el-color-success-light-9); border-color: var(--el-color-success-light-5); margin-bottom: 10px;">
                   <el-statistic title="GD thành công">
                     <template #number><el-text type="success" style="font-size: 26px; font-weight: 900;">{{ paymentStats.totalSuccess }}</el-text></template>
                   </el-statistic>
                 </el-card>
               </el-col>
               <el-col :xs="24" :sm="8">
-                <el-card shadow="never" style="background: var(--el-color-primary-light-9); border-color: var(--el-color-primary-light-5); margin-bottom: 10px;">
+                <el-card shadow="never" class="profile-card hoverable" style="background: var(--el-color-primary-light-9); border-color: var(--el-color-primary-light-5); margin-bottom: 10px;">
                   <el-statistic title="Tổng thanh toán">
                     <template #number><el-text type="primary" style="font-size: 20px; font-weight: 900;">{{ formatCurrencyShort(paymentStats.totalAmount) }}</el-text></template>
                   </el-statistic>
                 </el-card>
               </el-col>
               <el-col :xs="24" :sm="8">
-                <el-card shadow="never" style="margin-bottom: 10px;">
+                <el-card shadow="never" class="profile-card hoverable" style="margin-bottom: 10px;">
                   <el-statistic title="Đã hoàn tiền">
                     <template #number><el-text style="font-size: 26px; font-weight: 900;">{{ paymentStats.totalRefunded }}</el-text></template>
                   </el-statistic>
@@ -762,7 +802,7 @@
               </el-col>
             </el-row>
 
-            <el-card shadow="never">
+            <el-card shadow="never" class="profile-card">
               <el-row align="top" justify="space-between" style="margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
                 <el-space direction="vertical" :size="6">
                   <el-space :size="8"><el-icon><CreditCard /></el-icon><el-text tag="b">Danh sách giao dịch</el-text></el-space>
@@ -915,7 +955,7 @@
           </el-row>
         </el-space>
 
-        <el-card v-if="orderBill.notes" shadow="never" style="margin-top: 14px; background: var(--el-fill-color-lighter);" :body-style="{ padding: '12px' }">
+        <el-card v-if="orderBill.notes" shadow="never" class="profile-card" style="margin-top: 14px; background: var(--el-fill-color-lighter);" :body-style="{ padding: '12px' }">
           <el-space :size="6"><el-icon><InfoFilled /></el-icon><el-text size="small" style="font-weight: 600;">Ghi chú chiết khấu</el-text></el-space>
           <el-text size="small" type="info" style="display: block; margin-top: 6px;">{{ orderBill.notes }}</el-text>
         </el-card>
@@ -1040,6 +1080,15 @@ const promoLoading = ref(false);
 const promotionHistory = ref([]);
 const promoTypeFilter = ref("");
 const promoStatusFilter = ref("");
+const promoCurrentPage = ref(1);
+const promoPageSize = ref(10);
+
+const loyaltyCurrentPage = ref(1);
+const loyaltyPageSize = ref(10);
+
+const tierCurrentPage = ref(1);
+const tierPageSize = ref(10);
+
 
 const paymentsLoading = ref(false);
 const payments = ref([]);
@@ -1165,6 +1214,21 @@ const filteredPayments = computed(() => {
 const paginatedPayments = computed(() => {
   const start = (paymentCurrentPage.value - 1) * paymentPageSize.value;
   return filteredPayments.value.slice(start, start + paymentPageSize.value);
+});
+
+const paginatedLoyaltyHistory = computed(() => {
+  const start = (loyaltyCurrentPage.value - 1) * loyaltyPageSize.value;
+  return filteredLoyaltyHistory.value.slice(start, start + loyaltyPageSize.value);
+});
+
+const paginatedTierHistory = computed(() => {
+  const start = (tierCurrentPage.value - 1) * tierPageSize.value;
+  return tierHistory.value.slice(start, start + tierPageSize.value);
+});
+
+const paginatedPromoHistory = computed(() => {
+  const start = (promoCurrentPage.value - 1) * promoPageSize.value;
+  return filteredPromoHistory.value.slice(start, start + promoPageSize.value);
 });
 
 const activeHistoryFilters = computed(() => {
@@ -1386,8 +1450,8 @@ const viewOrderBill = async (orderId, pointsDelta) => {
 };
 
 // ── Filter helpers ────────────────────────────────────────────────────────────
-const filterLoyaltyHistory = () => {};
-const filterPromoHistory = () => {};
+const filterLoyaltyHistory = () => { loyaltyCurrentPage.value = 1; };
+const filterPromoHistory = () => { promoCurrentPage.value = 1; };
 const filterPayments = () => {
   paymentCurrentPage.value = 1;
 };
@@ -1628,5 +1692,16 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   font-size: 14px;
+}
+.profile-card {
+  border-radius: 12px;
+  border-color: var(--el-border-color-lighter);
+}
+.hoverable {
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.hoverable:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--el-box-shadow-light);
 }
 </style>

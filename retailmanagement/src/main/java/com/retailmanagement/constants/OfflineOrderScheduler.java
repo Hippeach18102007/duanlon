@@ -1,9 +1,12 @@
 package com.retailmanagement.constants;
 
 import com.retailmanagement.entity.Order;
+import com.retailmanagement.entity.NotificationType;
 import com.retailmanagement.repository.OrderRepository;
+import com.retailmanagement.repository.NotificationRepository;
 import com.retailmanagement.service.OrderEmailService;
 import com.retailmanagement.service.OrderService;
+import com.retailmanagement.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -21,9 +24,11 @@ public class OfflineOrderScheduler {
     private final OrderRepository orderRepository;
     private final OrderService orderService;
     private final OrderEmailService orderEmailService;
+    private final NotificationRepository notificationRepository;
+    private final NotificationService notificationService;
 
-    // Chạy vào lúc 02:00 sáng mỗi ngày
-    @Scheduled(cron = "0 * * * * ?")
+    // Chạy vào lúc 09:00 sáng mỗi ngày
+    @Scheduled(cron = "0 0 9 * * *", zone = "Asia/Ho_Chi_Minh")
     public void processOverdueOfflineOrders() {
         log.info("Bắt đầu quét đơn hàng OFFLINE quá hạn...");
 
@@ -35,6 +40,27 @@ public class OfflineOrderScheduler {
         List<Order> ordersToWarn = orderRepository.findOfflineOrdersToWarn(warningCutoff, cancelCutoff);
         for (Order order : ordersToWarn) {
             try {
+                if (order.getCustomer() == null || order.getCustomer().getEmail() == null) {
+                    continue;
+                }
+
+                String reminderMarker = "Đơn hàng #" + order.getOrderNumber();
+                boolean alreadyReminded = notificationRepository
+                        .existsByCustomerIdAndTypeAndMessageContaining(
+                                order.getCustomer().getId(),
+                                NotificationType.ORDER_UPDATE,
+                                reminderMarker);
+                if (alreadyReminded) {
+                    log.info("Đã có log nhắc nhận hàng cho đơn #{} nên bỏ qua", order.getOrderNumber());
+                    continue;
+                }
+
+                notificationService.createAndSaveNotification(
+                        order.getCustomer().getId(),
+                        NotificationType.ORDER_UPDATE,
+                        "Nhắc nhở nhận đơn hàng tại cửa hàng",
+                        reminderMarker + " đã sẵn sàng tại cửa hàng TechStore. Vui lòng đến nhận trong vòng 24 giờ tới.");
+
                 orderEmailService.sendOfflinePickupReminderEmail(order);
                 log.info("Đã gửi mail nhắc nhở nhận hàng cho đơn: {}", order.getOrderNumber());
             } catch (Exception e) {

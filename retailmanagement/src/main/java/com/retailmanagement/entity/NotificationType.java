@@ -15,7 +15,9 @@ public enum NotificationType {
     SYSTEM("Hệ thống", "🔔"),
     SPIN_EXPIRY_WARNING("Ưu đãi vòng quay sắp hết hạn", "🎡"),
     ORDER_UPDATE("Cập nhật về đơn hàng", ""),
-    ORDER_AUTO_COMPLETED("Giao hàng tự động", "✅");
+    ORDER_AUTO_COMPLETED("Giao hàng tự động", "✅"),
+    RETURN_REQUEST("Yêu cầu trả hàng", "↩️"),
+    RETURN_APPROVED("Đơn hàng đã được hoàn trả", "↩️");
 
     private final String displayName;
     private final String icon;

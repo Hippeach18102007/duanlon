@@ -1,13 +1,13 @@
 <!-- \src\pages\customer\CartPage.vue -->
 <template>
-  <div style="max-width: 1100px; margin: 0 auto; padding: 32px 24px 80px;">
+  <div class="cart-page">
 
     <!-- Header -->
     <el-row align="middle" justify="space-between" style="margin-bottom: 32px;">
       <el-space direction="vertical" :size="4">
-        <el-text size="small" type="primary" style="text-transform: uppercase; letter-spacing: 0.12em; font-weight: 700;">Giỏ hàng</el-text>
+        <el-text size="small" type="primary" class="cart-eyebrow">Giỏ hàng</el-text>
         <el-space :size="10" align="center">
-          <el-text tag="div" style="font-size: 28px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.2;">Shopping Cart</el-text>
+          <el-text tag="div" class="cart-title">Shopping Cart</el-text>
           <el-badge v-if="items.length" :value="items.length" type="primary" />
         </el-space>
       </el-space>
@@ -17,7 +17,7 @@
     </el-row>
 
     <!-- Loading skeleton -->
-    <el-card v-if="loading" shadow="never" :body-style="{ padding: 0 }">
+    <el-card v-if="loading" shadow="never" class="profile-card" :body-style="{ padding: 0 }">
       <div v-for="i in 3" :key="i">
         <el-skeleton animated style="padding: 18px 22px;">
           <template #template>
@@ -53,7 +53,7 @@
     <div v-else class="cart-layout">
 
       <!-- Left: items -->
-      <el-card shadow="never" :body-style="{ padding: 0 }" style="overflow: hidden;">
+      <el-card shadow="never" class="profile-card" :body-style="{ padding: 0 }" style="overflow: hidden;">
         <!-- Table head -->
         <div class="cart-head">
           <el-text size="small" type="info" style="text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700;">Sản phẩm</el-text>
@@ -120,9 +120,9 @@
       </el-card>
 
       <!-- Right: summary -->
-      <div style="position: sticky; top: 24px; display: flex; flex-direction: column; gap: 16px;">
-        <el-card shadow="never">
-          <el-text tag="div" style="font-size: 17px; font-weight: 600; margin-bottom: 20px;">Tổng đơn hàng</el-text>
+      <div class="cart-summary-panel">
+        <el-card shadow="never" class="profile-card">
+          <el-text tag="div" class="cart-summary-title">Tổng đơn hàng</el-text>
 
           <el-space direction="vertical" fill :size="12" style="width: 100%; margin-bottom: 16px;">
             <el-row justify="space-between">
@@ -140,7 +140,7 @@
 
           <el-row justify="space-between" align="middle" style="margin-bottom: 22px;">
             <el-text style="font-weight: 600;">Tổng cộng</el-text>
-            <el-text type="primary" style="font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums;">
+            <el-text type="primary" class="cart-total">
               {{ formatMoney(subtotal) }}
             </el-text>
           </el-row>
@@ -153,24 +153,24 @@
               :disabled="!items.length"
               @click="checkout"
             >
-              <el-icon><Right /></el-icon> Thanh toán ngay
+              <el-icon><Right /></el-icon> Tiếp theo
             </el-button>
           </el-space>
         </el-card>
 
         <!-- Trust badges -->
-        <el-card shadow="never" :body-style="{ padding: '16px 18px' }">
+        <el-card shadow="never" class="profile-card" :body-style="{ padding: '16px 18px' }">
           <el-space direction="vertical" fill :size="12" style="width: 100%;">
             <el-space :size="10" align="center">
-              <el-icon type="primary" style="color: var(--el-color-primary); flex-shrink: 0;"><Lock /></el-icon>
+              <el-icon color="var(--el-color-primary)" style="flex-shrink: 0;"><Lock /></el-icon>
               <el-text size="small" type="info">Thanh toán bảo mật</el-text>
             </el-space>
             <el-space :size="10" align="center">
-              <el-icon style="color: var(--el-color-primary); flex-shrink: 0;"><Location /></el-icon>
+              <el-icon color="var(--el-color-primary)" style="flex-shrink: 0;"><Location /></el-icon>
               <el-text size="small" type="info">Giao hàng toàn quốc</el-text>
             </el-space>
             <el-space :size="10" align="center">
-              <el-icon style="color: var(--el-color-primary); flex-shrink: 0;"><Refresh /></el-icon>
+              <el-icon color="var(--el-color-primary)" style="flex-shrink: 0;"><Refresh /></el-icon>
               <el-text size="small" type="info">Đổi trả dễ dàng</el-text>
             </el-space>
           </el-space>
@@ -264,6 +264,46 @@ onMounted(loadCart);
 
 <style scoped>
 /* Layout */
+.cart-page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 32px 24px 80px;
+}
+
+.cart-eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-weight: 700;
+}
+
+.cart-title {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.cart-summary-panel {
+  position: sticky;
+  top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.cart-summary-title {
+  font-size: 17px;
+  font-weight: 600;
+  margin-bottom: 20px;
+  display: block;
+}
+
+.cart-total {
+  font-size: 22px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
 .cart-layout {
   display: grid;
   grid-template-columns: 1fr 320px;

@@ -63,9 +63,7 @@ public class PaymentService {
         payment = paymentRepository.save(payment);
 
         order.setPaymentStatus("PAID");
-        if ("ONLINE".equalsIgnoreCase(order.getChannel())) {
-            order.setStatus(OrderStatuses.PAID);
-        }
+        order.setStatus(OrderStatuses.PAID);
         order.setPaidAt(Instant.now());
         order.setUpdatedAt(Instant.now());
 

@@ -110,6 +110,50 @@
       </transition-group>
     </div>
 
+    <!-- THƯƠNG HIỆU NỔI BẬT -->
+    <div style="margin-bottom: 32px;" v-if="brands.length > 0">
+      <el-row align="middle" justify="space-between" style="margin-bottom: 14px;">
+        <el-space :size="8" align="center">
+          <el-icon style="color: var(--el-color-primary); font-size: 16px;"><Platform /></el-icon>
+          <el-text tag="b" style="font-size: 15px; letter-spacing: -0.01em; text-transform: uppercase;">Thương Hiệu Nổi Bật</el-text>
+        </el-space>
+      </el-row>
+      <div style="display: flex; gap: 12px; flex-wrap: nowrap; overflow-x: auto; padding-bottom: 8px;" class="hide-scrollbar">
+        <el-card 
+          v-for="b in brands" 
+          :key="b" 
+          shadow="hover" 
+          :body-style="{ padding: '16px 8px', textAlign: 'center', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }"
+          @click="selectedBrand = b; onSelectBrand()"
+          style="flex: 1; min-width: 120px; border-radius: 12px; border: 1px solid var(--el-border-color-lighter);"
+        >
+          <el-text tag="b" style="font-size: 15px;">{{ b }}</el-text>
+        </el-card>
+      </div>
+    </div>
+
+    <!-- MUA THEO NHU CẦU -->
+    <div style="margin-bottom: 36px;" v-if="categories.length > 0">
+      <el-row align="middle" justify="space-between" style="margin-bottom: 14px;">
+        <el-space :size="8" align="center">
+          <el-icon style="color: var(--el-color-success); font-size: 16px;"><Briefcase /></el-icon>
+          <el-text tag="b" style="font-size: 15px; letter-spacing: -0.01em; text-transform: uppercase;">Mua Theo Nhu Cầu</el-text>
+        </el-space>
+      </el-row>
+      <div style="display: flex; gap: 12px; flex-wrap: nowrap; overflow-x: auto; padding-bottom: 8px;" class="hide-scrollbar">
+        <el-card 
+          v-for="c in categories.slice(0, 6)" 
+          :key="c.id" 
+          shadow="hover" 
+          :body-style="{ padding: '16px 8px', textAlign: 'center', cursor: 'pointer', background: 'linear-gradient(135deg, var(--el-color-primary-light-9), #fff)', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }"
+          @click="activeKey = String(c.id); onSelectCategory()"
+          style="flex: 1; min-width: 140px; border-radius: 12px; border: none;"
+        >
+          <el-text tag="b" type="primary" style="font-size: 14px;">{{ c.name }}</el-text>
+        </el-card>
+      </div>
+    </div>
+
     <div v-if="topProducts.length > 0" style="margin-bottom: 32px;">
       <el-row align="middle" justify="space-between" style="margin-bottom: 14px;">
         <el-space :size="8" align="center">
@@ -120,84 +164,61 @@
       </el-row>
 
       <div class="top-scroll">
-        <el-card
-          v-for="p in topProducts"
-          :key="'top-' + p.id"
-          shadow="never"
-          :body-style="{ padding: 0 }"
-          class="top-card"
-          :class="{ 'is-out-of-stock': p.isOutOfStock }"
-          @click="$router.push('/product/' + p.id)"
-        >
-          <div class="product-img-wrap">
-            <img :src="p.imageUrl" :alt="p.name" class="product-img" loading="lazy" />
-            <div v-if="p.isOutOfStock" class="badge-center">
-              <el-tag type="danger" effect="dark">HẾT HÀNG</el-tag>
-            </div>
-            <div v-else-if="p.isNew" class="badge-tl">
-              <el-tag type="danger" size="small">NEW</el-tag>
-            </div>
-          </div>
-          <div class="product-body">
-            <el-text class="product-name" tag="div">{{ p.name }}</el-text>
-            <el-text class="product-desc" size="small" type="info">{{ p.description || '—' }}</el-text>
-            <el-divider style="margin: 8px 0;" />
-            <el-row align="middle" justify="space-between">
-              <el-text tag="b" type="primary">{{ p.priceText }}</el-text>
-            </el-row>
-            <el-button
-              plain
-              size="small"
-              style="width: 100%; margin-top: 8px;"
-              :disabled="!isCustomer || !p.defaultVariantId || p.isOutOfStock"
-              @click.stop="goOrder(p)"
-            >
-              <el-icon v-if="!p.isOutOfStock"><ShoppingCart /></el-icon>
-              {{ p.isOutOfStock ? 'Hết hàng' : 'Thêm vào giỏ' }}
-            </el-button>
-          </div>
-        </el-card>
+        <div v-for="p in topProducts" :key="'top-' + p.id" class="top-card-wrapper">
+          <ProductCard :product="p" @add-to-cart="goOrder" />
+        </div>
       </div>
     </div>
 
     <div class="ch-layout">
 
       <aside class="ch-sidebar">
-        <div class="sidebar-sticky">
+        <div class="sidebar-sticky hide-scrollbar">
           <el-button v-if="hasActiveFilters" type="danger" plain size="small" @click="resetFilters">
             Xóa tất cả bộ lọc
           </el-button>
 
-          <el-card shadow="never">
-            <template #header>
-              <el-text size="small" style="text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600;">Danh mục</el-text>
-            </template>
-            <el-select v-model="activeKey" style="width: 100%;" @change="onSelectCategory" placeholder="Chọn danh mục">
-              <el-option label="Tất cả" value="all" />
-              <el-option v-for="c in categories" :key="c.id" :label="c.name" :value="String(c.id)" />
-            </el-select>
-          </el-card>
-
-          <el-card shadow="never">
-            <template #header>
-              <el-text size="small" style="text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600;">Thương hiệu</el-text>
-            </template>
-            <el-select v-model="selectedBrand" style="width: 100%;" @change="onSelectBrand" placeholder="Chọn hãng">
-              <el-option label="Tất cả hãng" value="all" />
-              <el-option v-for="b in brands" :key="b" :label="b" :value="b" />
-            </el-select>
-          </el-card>
-
-          <el-card shadow="never">
-            <template #header>
-              <el-text size="small" style="text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600;">Khoảng giá</el-text>
-            </template>
-            <div style="display: flex; flex-direction: column; gap: 10px;">
-              <el-input-number v-model="minPrice" :min="0" :step="1000000" placeholder="Từ (VNĐ)" size="small" style="width: 100%;" :controls="false" />
-              <el-input-number v-model="maxPrice" :min="0" :step="1000000" placeholder="Đến (VNĐ)" size="small" style="width: 100%;" :controls="false" />
-              <el-button type="primary" plain size="small" style="width: 100%;" @click="applyPriceFilter">Áp dụng giá</el-button>
+          <div style="display: flex; flex-direction: column; gap: 16px;">
+            <!-- Category Filter -->
+            <div class="filter-section">
+              <div class="filter-title">Danh mục</div>
+              <div class="filter-list">
+                <div class="filter-item" :class="{ active: activeKey === 'all' }" @click="activeKey = 'all'; onSelectCategory()">
+                  Tất cả
+                </div>
+                <div v-for="c in categories" :key="c.id" class="filter-item" :class="{ active: activeKey === String(c.id) }" @click="activeKey = String(c.id); onSelectCategory()">
+                  {{ c.name }}
+                </div>
+              </div>
             </div>
-          </el-card>
+
+            <el-divider style="margin: 0;" />
+
+            <!-- Brand Filter -->
+            <div class="filter-section">
+              <div class="filter-title">Thương hiệu</div>
+              <div class="filter-list">
+                <div class="filter-item" :class="{ active: selectedBrand === 'all' }" @click="selectedBrand = 'all'; onSelectBrand()">
+                  Tất cả hãng
+                </div>
+                <div v-for="b in brands" :key="b" class="filter-item" :class="{ active: selectedBrand === b }" @click="selectedBrand = b; onSelectBrand()">
+                  {{ b }}
+                </div>
+              </div>
+            </div>
+
+            <el-divider style="margin: 0;" />
+
+            <!-- Price Filter -->
+            <div class="filter-section">
+              <div class="filter-title">Khoảng giá</div>
+              <div style="display: flex; flex-direction: column; gap: 10px;">
+                <el-input-number v-model="minPrice" :min="0" :step="1000000" placeholder="Từ (VNĐ)" size="small" style="width: 100%;" :controls="false" />
+                <el-input-number v-model="maxPrice" :min="0" :step="1000000" placeholder="Đến (VNĐ)" size="small" style="width: 100%;" :controls="false" />
+                <el-button type="primary" plain size="small" style="width: 100%;" @click="applyPriceFilter">Áp dụng giá</el-button>
+              </div>
+            </div>
+          </div>
         </div>
       </aside>
 
@@ -257,41 +278,12 @@
           </el-empty>
 
           <div v-else class="product-grid">
-            <el-card
+            <ProductCard
               v-for="p in products"
               :key="p.id"
-              shadow="never"
-              :body-style="{ padding: 0 }"
-              class="product-card"
-              :class="{ 'is-out-of-stock': p.isOutOfStock }"
-              @click="$router.push('/product/' + p.id)"
-            >
-              <div class="product-img-wrap">
-                <img :src="p.imageUrl" :alt="p.name" class="product-img" loading="lazy" />
-                <div v-if="p.isOutOfStock" class="badge-center">
-                  <el-tag type="danger" effect="dark">HẾT HÀNG</el-tag>
-                </div>
-                <div v-else-if="p.isNew" class="badge-tl">
-                  <el-tag type="danger" size="small">NEW</el-tag>
-                </div>
-              </div>
-              <div class="product-body">
-                <el-text class="product-name" tag="div">{{ p.name }}</el-text>
-                <el-text class="product-desc" size="small" type="info">{{ p.description || '—' }}</el-text>
-                <el-divider style="margin: 8px 0;" />
-                <el-text tag="b" type="primary">{{ p.priceText }}</el-text>
-                <el-button
-                  plain
-                  size="small"
-                  style="width: 100%; margin-top: 8px;"
-                  :disabled="!isCustomer || !p.defaultVariantId || p.isOutOfStock"
-                  @click.stop="goOrder(p)"
-                >
-                  <el-icon v-if="!p.isOutOfStock"><ShoppingCart /></el-icon>
-                  {{ p.isOutOfStock ? 'Hết hàng' : 'Thêm vào giỏ' }}
-                </el-button>
-              </div>
-            </el-card>
+              :product="p"
+              @add-to-cart="goOrder"
+            />
           </div>
 
           <el-row justify="center" style="margin-top: 36px;">
@@ -316,8 +308,9 @@
 </template>
 
 <script setup>
-import { Refresh, ShoppingCart, StarFilled } from "@element-plus/icons-vue";
+import { Refresh, ShoppingCart, StarFilled, Platform, Briefcase } from "@element-plus/icons-vue";
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+import ProductCard from "../../components/ProductCard.vue";
 import { categoriesApi } from "../../api/categories.api";
 import AiChatWidget from '../../components/Aichatwidget.vue';
 import { productsApi } from "../../api/products.api";
@@ -341,7 +334,9 @@ const activeKey = ref("all");
 const categoryId = ref(null);
 
 const brands = ref([]);
+const searchTerm = ref("");
 const selectedBrand = ref("all");
+const activeFilters = ref(["category", "brand", "price"]);
 const minPrice = ref(null);
 const maxPrice = ref(null);
 
@@ -349,7 +344,6 @@ const sortBy = ref("newest_arrival");
 
 const page = ref(0);
 const totalElements = ref(0);
-const searchTerm = ref("");
 const totalPages = computed(() =>
   Math.max(1, Math.ceil(totalElements.value / 20)),
 );
@@ -517,16 +511,17 @@ async function reloadAll() {
   await loadTopProducts();
 }
 
-function onSelectCategory(key) {
-  activeKey.value = key;
-  categoryId.value = key === "all" ? null : Number(key);
+function onSelectCategory() {
+  categoryId.value = activeKey.value === "all" ? null : Number(activeKey.value);
   page.value = 0;
   reloadProducts();
+  document.querySelector(".ch-main")?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
-function onSelectBrand(val) {
+function onSelectBrand() {
   page.value = 0;
   reloadProducts();
+  document.querySelector(".ch-main")?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function applyPriceFilter() {
@@ -536,6 +531,7 @@ function applyPriceFilter() {
   }
   page.value = 0;
   reloadProducts();
+  document.querySelector(".ch-main")?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function resetFilters() {
@@ -611,6 +607,27 @@ onMounted(async () => {
     page.value = 0;
     reloadProducts();
   });
+  window.addEventListener("products:filter", (e) => {
+    const { type, value } = e.detail;
+    if (type === 'brand') {
+      selectedBrand.value = value;
+    } else if (type === 'categoryName') {
+      const cat = categories.value.find(c => c.name.toLowerCase().includes(value.toLowerCase()));
+      if (cat) {
+        activeKey.value = String(cat.id);
+        categoryId.value = cat.id;
+        searchTerm.value = "";
+      } else {
+        // Fallback: search by name
+        activeKey.value = "all";
+        categoryId.value = null;
+        searchTerm.value = value;
+      }
+    }
+    page.value = 0;
+    reloadProducts();
+    document.querySelector(".ch-main")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
   await reloadAll();
   if (isCustomer.value) {
     cartStore.refreshCount();
@@ -672,87 +689,59 @@ onMounted(async () => {
   padding-bottom: 16px;
 }
 
-/* ── Product Image ─────────────────────────────────── */
-.product-img-wrap {
-  position: relative;
-  overflow: hidden;
+/* Custom Filter Styles */
+.filter-section {
+  padding: 4px 8px;
 }
-
-.product-img {
-  width: 100%;
-  height: 180px;
-  object-fit: cover;
-  display: block;
-  transition: transform 0.25s ease;
+.filter-title {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--el-text-color-primary);
+  margin-bottom: 12px;
 }
-
-.product-card:hover .product-img,
-.top-card:hover .product-img {
-  transform: scale(1.04);
-}
-
-.is-out-of-stock .product-img { filter: grayscale(80%) opacity(0.75); }
-
-.badge-center {
-  position: absolute;
-  top: 50%; left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 10;
-  pointer-events: none;
-}
-
-.badge-tl {
-  position: absolute;
-  top: 10px; left: 10px;
-}
-
-/* ── Product Body ──────────────────────────────────── */
-.product-body {
-  padding: 12px 14px 14px;
+.filter-list {
   display: flex;
   flex-direction: column;
-  flex: 1;
+  gap: 4px;
 }
-
-.product-name {
-  font-size: 13.5px;
+.filter-item {
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  color: var(--el-text-color-regular);
+}
+.filter-item:hover {
+  background-color: var(--el-color-primary-light-9);
+  color: var(--el-color-primary);
+  transform: translateX(4px);
+}
+.filter-item.active {
+  background-color: var(--el-color-primary-light-8);
+  color: var(--el-color-primary);
   font-weight: 600;
-  line-height: 1.4;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  margin-bottom: 4px;
 }
 
-.product-desc {
-  display: -webkit-box;
-  -webkit-line-clamp: 1;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  flex: 1;
+/* Hide scrollbar for horizontal scrolling lists */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
-/* ── Product Grid ──────────────────────────────────── */
 .product-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 20px;
 }
 
-.product-card {
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  transition: box-shadow 0.2s;
-}
-
-.product-card:hover { box-shadow: var(--el-box-shadow-light); }
-
-.product-card :deep(.el-card__body) {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
+.top-card-wrapper {
+  flex: 0 0 240px;
 }
 
 .el-radio {

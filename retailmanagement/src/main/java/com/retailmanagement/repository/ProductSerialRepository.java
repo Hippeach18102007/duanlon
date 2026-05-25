@@ -4,10 +4,12 @@ import com.retailmanagement.entity.ProductSerial;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import jakarta.persistence.LockModeType;
 import java.util.List;
 import java.util.Optional;
 
@@ -16,6 +18,10 @@ public interface ProductSerialRepository extends JpaRepository<ProductSerial, Lo
     // Lấy toàn bộ số Seri của 1 Biến thể cụ thể
     List<ProductSerial> findByVariantId(Integer variantId);
     Optional<ProductSerial> findBySerialNumber(String serialNumber);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT s FROM ProductSerial s WHERE s.serialNumber = :serialNumber")
+    Optional<ProductSerial> findBySerialNumberForUpdate(@Param("serialNumber") String serialNumber);
 
     // Đếm số lượng máy thực tế đang ở trong kho của 1 Biến thể
     int countByVariantIdAndStatus(Integer variantId, String status);

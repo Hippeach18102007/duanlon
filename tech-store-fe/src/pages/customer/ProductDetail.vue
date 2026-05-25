@@ -41,26 +41,53 @@
 
       <!-- Info -->
       <el-col :xs="24" :sm="14">
-        <el-space :size="8" align="center" style="margin-bottom: 10px;">
-          <el-tag v-if="product.isNew" type="danger" effect="dark" round>NEW ARRIVAL</el-tag>
-          <el-text type="info" size="small">SKU: {{ product.sku }}</el-text>
-        </el-space>
+        <div style="margin-bottom: 24px;">
+          <el-text type="primary" size="small" style="font-weight: 700; letter-spacing: 1px; text-transform: uppercase;">
+            {{ product.brand }}
+          </el-text>
+          <h1 style="font-size: 32px; font-weight: 800; color: #0f172a; margin: 4px 0 8px; line-height: 1.2;">
+            {{ product.name }}
+          </h1>
+          <el-text v-if="product.tags?.length" type="info" size="small" style="font-style: italic;">
+            {{ product.tags[0] }} — Hiệu năng đỉnh cao, thiết kế sang trọng
+          </el-text>
+        </div>
 
-        <el-text tag="div" style="font-size: 22px; font-weight: 700; color: #1e293b; margin-bottom: 12px;">
-          {{ product.name }}
-        </el-text>
-
-        <el-space v-if="product.tags?.length > 0" wrap :size="6" style="margin-bottom: 12px;">
-          <el-tag v-for="(tag, idx) in product.tags" :key="idx" size="small" type="warning" effect="light">
-            {{ tag }}
+        <el-space wrap :size="12" style="margin-bottom: 20px;">
+          <el-tag type="success" effect="plain" round style="padding: 6px 12px; height: auto;">
+            <div style="display: flex; align-items: center; gap: 6px; font-size: 13px; white-space: nowrap;">
+              <el-icon size="16"><CircleCheckFilled /></el-icon> <span>Chính hãng 100%</span>
+            </div>
+          </el-tag>
+          <el-tag type="warning" effect="plain" round style="padding: 6px 12px; height: auto;">
+            <div style="display: flex; align-items: center; gap: 6px; font-size: 13px; white-space: nowrap;">
+              <el-icon size="16"><Service /></el-icon> <span>Bảo hành 12 tháng</span>
+            </div>
+          </el-tag>
+          <el-tag v-if="currentStock > 10" type="info" effect="plain" round style="padding: 6px 12px; height: auto;">
+            <div style="display: flex; align-items: center; gap: 6px; font-size: 13px; white-space: nowrap;">
+              <el-icon size="16"><Van /></el-icon> <span>Miễn phí vận chuyển</span>
+            </div>
           </el-tag>
         </el-space>
 
-        <el-divider border-style="dashed" />
+        <el-divider />
 
-        <el-text type="danger" style="font-size: 2rem; font-weight: 800; display: block; margin-bottom: 20px;">
-          {{ formatPrice(selectedVariant ? selectedVariant.price : product.minPrice) }}
-        </el-text>
+        <el-card shadow="never" style="margin-bottom: 24px; background-color: var(--el-fill-color-light); border: none;">
+          <el-space align="center" :size="20">
+            <el-text type="danger" style="font-size: 32px; font-weight: 700; line-height: 1;">
+              {{ formatPrice(currentPrice) }}
+            </el-text>
+            <!-- <div style="display: flex; flex-direction: column; gap: 4px; align-items: flex-start;">
+              <el-text type="info" style="text-decoration: line-through;">
+                {{ formatPrice(originalPrice) }}
+              </el-text>
+              <el-tag type="danger" effect="dark" size="small" style="font-weight: 600;">
+                -{{ discountPercent }}%
+              </el-tag>
+            </div> -->
+          </el-space>
+        </el-card>
 
         <div v-if="variants.length > 0" style="margin-bottom: 20px;">
           <el-text tag="div" style="font-weight: 600; margin-bottom: 8px;">Chọn phiên bản / cấu hình:</el-text>
@@ -86,26 +113,47 @@
           </el-row>
 
           <el-row align="middle" :gutter="12">
-            <el-col flex="none">
+            <el-col :span="24" style="margin-bottom: 12px;">
+              <el-alert
+                v-if="currentStock > 0 && currentStock <= 5"
+                title="Sắp cháy hàng!"
+                type="warning"
+                description="Chỉ còn một vài sản phẩm cuối cùng trong kho. Đừng bỏ lỡ!"
+                show-icon
+                :closable="false"
+              />
+            </el-col>
+            <el-col :span="10">
               <el-input-number
                 v-model="quantity"
                 :min="1"
                 :max="currentStock > 0 ? currentStock : 1"
                 :disabled="currentStock === 0"
-                style="width: 130px;"
+                style="width: 100%;"
+                size="large"
               />
             </el-col>
-            <el-col flex="1">
+            <el-col :span="14">
               <el-button
-                type="primary"
                 size="large"
-                style="width: 100%;"
+                style="width: 100%; font-weight: 700;"
                 :icon="ShoppingCart"
                 :disabled="currentStock === 0 || !selectedVariant"
                 :loading="addingToCart"
                 @click="handleAddToCart"
               >
-                THÊM VÀO GIỎ HÀNG
+                THÊM VÀO GIỎ
+              </el-button>
+            </el-col>
+            <el-col :span="24" style="margin-top: 12px;">
+              <el-button
+                type="danger"
+                size="large"
+                style="width: 100%; height: 56px; font-size: 18px; font-weight: 900; letter-spacing: 1px;"
+                :disabled="currentStock === 0 || !selectedVariant"
+                @click="handleBuyNow"
+              >
+                MUA NGAY
               </el-button>
             </el-col>
           </el-row>
@@ -116,40 +164,118 @@
     <el-empty v-else description="Không tìm thấy thông tin sản phẩm" />
 
     <div v-if="product" style="margin-top: 40px;">
-      <el-card shadow="never">
-        <el-tabs v-model="activeTab">
-          <el-tab-pane label="Đặc điểm nổi bật" name="description">
-            <div style="padding: 12px; white-space: pre-wrap; line-height: 1.8; color: #475569;">
-              {{ displayDescription }}
-            </div>
-          </el-tab-pane>
+      <el-row :gutter="24">
+        <el-col :md="16">
+          <el-card shadow="never" style="margin-bottom: 24px; border-radius: 12px;">
+            <el-tabs v-model="activeTab">
+              <el-tab-pane label="Đặc điểm nổi bật" name="description">
+                <div style="padding: 12px; white-space: pre-wrap; line-height: 1.8; color: #475569;">
+                  {{ displayDescription }}
+                </div>
+              </el-tab-pane>
 
-          <el-tab-pane label="Thông số kỹ thuật" name="specs">
-            <div style="padding: 12px;">
-              <el-table :data="attributes" border stripe style="width: 100%; max-width: 600px;">
-                <el-table-column prop="name" label="Thông số" width="200" />
-                <el-table-column prop="value" label="Chi tiết" />
-                <template #empty>
-                  <el-empty description="Chưa cập nhật thông số kỹ thuật" :image-size="60" />
-                </template>
-              </el-table>
+              <el-tab-pane label="Thông số kỹ thuật" name="specs">
+                <div style="padding: 12px;">
+                  <el-table :data="attributes" border stripe style="width: 100%;">
+                    <el-table-column prop="name" label="Thông số" width="200" />
+                    <el-table-column prop="value" label="Chi tiết" />
+                    <template #empty>
+                      <el-empty description="Chưa cập nhật thông số kỹ thuật" :image-size="60" />
+                    </template>
+                  </el-table>
+                </div>
+              </el-tab-pane>
+            </el-tabs>
+          </el-card>
+
+          <!-- Related Products Section -->
+          <div v-if="relatedProducts.length" style="margin-top: 40px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+              <h2 style="font-size: 24px; font-weight: 800; color: #1e293b; margin: 0;">Sản phẩm tương tự</h2>
+              <el-button link type="primary" style="font-weight: 600;">Xem tất cả</el-button>
             </div>
-          </el-tab-pane>
-        </el-tabs>
-      </el-card>
+            <el-row :gutter="16">
+              <el-col v-for="p in relatedProducts" :key="p.id" :xs="12" :sm="6">
+                <ProductCard :product="p" />
+              </el-col>
+            </el-row>
+          </div>
+        </el-col>
+
+        <el-col :md="8">
+          <el-card shadow="never" style="border-radius: 12px; margin-bottom: 24px;">
+            <template #header>
+              <span style="font-weight: 800; color: #1e293b;">Yên tâm mua sắm tại TechStore</span>
+            </template>
+            <div class="commitment-item">
+              <el-icon color="var(--el-color-success)"><CircleCheckFilled /></el-icon>
+              <div>
+                <div class="commitment-title">Chính hãng 100%</div>
+                <div class="commitment-desc">Hoàn tiền nếu phát hiện hàng giả</div>
+              </div>
+            </div>
+            <el-divider />
+            <div class="commitment-item">
+              <el-icon color="var(--el-color-primary)"><Van /></el-icon>
+              <div>
+                <div class="commitment-title">Giao nhanh toàn quốc</div>
+                <div class="commitment-desc">Miễn phí vận chuyển</div>
+              </div>
+            </div>
+            <el-divider />
+            <div class="commitment-item">
+              <el-icon color="var(--el-color-warning)"><Refresh /></el-icon>
+              <div>
+                <div class="commitment-title">24h đổi trả</div>
+                <div class="commitment-desc">Lỗi là đổi mới, thủ tục đơn giản</div>
+              </div>
+            </div>
+          </el-card>
+        </el-col>
+      </el-row>
     </div>
+
+    <!-- Sticky Buy Bar -->
+    <el-affix position="bottom" :offset="0">
+      <transition name="el-fade-in-linear">
+        <div v-if="product && !loading && isStickyVisible" class="sticky-bar">
+          <div class="sticky-bar-container">
+            <div class="sticky-info">
+              <el-image :src="mainImage" fit="cover" class="sticky-img" />
+              <div class="sticky-text">
+                <div class="sticky-name">{{ product.name }}</div>
+                <div class="sticky-price">{{ formatPrice(currentPrice) }}</div>
+              </div>
+            </div>
+            <div class="sticky-actions">
+              <el-button 
+                type="danger" 
+                size="large" 
+                style="font-weight: 800; padding: 0 40px;"
+                :disabled="currentStock === 0"
+                @click="handleBuyNow"
+              >
+                MUA NGAY
+              </el-button>
+            </div>
+          </div>
+        </div>
+      </transition>
+    </el-affix>
   </div>
 </template>
 
 <script setup>
-import { ShoppingCart } from "@element-plus/icons-vue";
+import { ShoppingCart, CircleCheckFilled, Service, Van, Refresh } from "@element-plus/icons-vue";
 import { ref, computed, onMounted } from "vue";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { productsApi } from "../../api/products.api";
 import { useCartStore } from "../../stores/cart";
 import { toast } from "../../ui/toast";
+import ProductCard from "../../components/ProductCard.vue";
 
 const route = useRoute();
+const router = useRouter();
 const cartStore = useCartStore();
 
 const loading = ref(true);
@@ -166,10 +292,19 @@ const mainImage = ref("");
 const selectedVariant = ref(null);
 const quantity = ref(1);
 const activeTab = ref("description");
+const relatedProducts = ref([]);
+const isStickyVisible = ref(false);
+
+const mainInfoRef = ref(null);
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 
 const currentStock = computed(() => selectedVariant.value?.stockQuantity || 0);
+
+// Tính toán giá gốc và phần trăm giảm giá (giả lập nếu không có từ API)
+const currentPrice = computed(() => selectedVariant.value ? selectedVariant.value.price : product.value?.minPrice || 0);
+const originalPrice = computed(() => currentPrice.value / 0.9); // Giả định giảm 10%
+const discountPercent = computed(() => 10);
 
 const displayDescription = computed(() => {
   if (!product.value?.description) return "Chưa có bài viết mô tả cho sản phẩm này.";
@@ -285,11 +420,34 @@ async function loadProductData() {
         attributes.value = [...baseAttributes.value];
     }
 
+    loadRelatedProducts(data);
+
   } catch (error) {
     toast("Lỗi khi tải dữ liệu sản phẩm", "error");
     console.error(error);
   } finally {
     loading.value = false;
+  }
+}
+
+async function loadRelatedProducts(currentProduct) {
+  try {
+    const brand = currentProduct.brand;
+    const categoryId = currentProduct.categoryId;
+    
+    // Tìm sản phẩm cùng danh mục hoặc cùng thương hiệu
+    const res = await productsApi.getAll({ 
+      page: 0, 
+      size: 10,
+      brand: brand,
+      categoryId: categoryId
+    });
+    
+    const all = res.data?.data?.content || res.data?.content || [];
+    // Loại bỏ sản phẩm hiện tại
+    relatedProducts.value = all.filter(p => p.id !== currentProduct.id).slice(0, 4);
+  } catch (err) {
+    console.error("Lỗi tải sản phẩm liên quan", err);
   }
 }
 
@@ -307,7 +465,33 @@ async function handleAddToCart() {
   }
 }
 
-onMounted(() => loadProductData());
+async function handleBuyNow() {
+  if (!selectedVariant.value) return toast("Vui lòng chọn cấu hình sản phẩm", "warning");
+  if (quantity.value > currentStock.value) return toast("Số lượng vượt quá tồn kho", "warning");
+  
+  try {
+    await cartStore.addToCart(selectedVariant.value.id, quantity.value);
+    router.push("/cart");
+  } catch {
+    toast("Vui lòng đăng nhập để tiếp tục", "error");
+  }
+}
+
+function handleScroll() {
+  // Hiện sticky bar khi cuộn qua 600px (đại diện cho việc qua khỏi info chính)
+  isStickyVisible.value = window.scrollY > 600;
+}
+
+import { onUnmounted } from "vue";
+
+onMounted(() => {
+  loadProductData();
+  window.addEventListener('scroll', handleScroll);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('scroll', handleScroll);
+});
 </script>
 
 <style scoped>
@@ -329,5 +513,80 @@ onMounted(() => loadProductData());
 
 .thumb--active {
   border-color: var(--el-color-primary);
+}
+
+.commitment-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.commitment-title {
+  font-weight: 700;
+  font-size: 14px;
+  color: #1e293b;
+  margin-bottom: 2px;
+}
+
+.commitment-desc {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.sticky-bar {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid #e2e8f0;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.05);
+  padding: 12px 0;
+  width: 100%;
+}
+
+.sticky-bar-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sticky-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.sticky-img {
+  width: 50px;
+  height: 50px;
+  border-radius: 6px;
+  background: #f1f5f9;
+}
+
+.sticky-name {
+  font-weight: 700;
+  color: #1e293b;
+  font-size: 16px;
+}
+
+.sticky-price {
+  font-weight: 800;
+  color: var(--el-color-danger);
+}
+
+@media (max-width: 768px) {
+  .sticky-info {
+    display: none;
+  }
+  .sticky-bar-container {
+    justify-content: center;
+  }
+  .sticky-actions {
+    width: 100%;
+  }
+  .sticky-actions button {
+    width: 100%;
+  }
 }
 </style>

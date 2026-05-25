@@ -1,20 +1,49 @@
 import http from "./http";
 
 export const notificationsApi = {
+  // ── Dành cho Customer: lấy thông báo của chính mình ────────────
   getMyNotifications(unreadOnly = false) {
     return http.get(`/api/auth/notifications/my?unreadOnly=${unreadOnly}`);
   },
+
   getUnreadCount() {
     return http.get("/api/auth/notifications/my/unread-count");
   },
+
   markAsRead(notificationId) {
     return http.put(`/api/auth/notifications/${notificationId}/read`);
   },
+
   markAllAsRead() {
     return http.put("/api/auth/notifications/read-all");
   },
+
   deleteNotification(notificationId) {
     return http.delete(`/api/auth/notifications/${notificationId}`);
+  },
+
+  // ── Dành cho Admin: lấy tất cả RETURN_REQUEST từ mọi khách hàng ─
+  // Backend cần cung cấp: GET /api/auth/admin/notifications/return-requests
+  // Response: danh sách NotificationResponse có type = RETURN_REQUEST
+  getReturnRequestNotifications() {
+    return http.get("/api/auth/admin/notifications/return-requests");
+  },
+
+  // ── Dành cho Admin: đếm số RETURN_REQUEST chưa đọc ─────────────
+  // Backend cần cung cấp: GET /api/auth/admin/notifications/return-requests/unread-count
+  getReturnRequestUnreadCount() {
+    return http.get("/api/auth/admin/notifications/return-requests/unread-count");
+  },
+
+  // ── Dành cho Admin: đánh dấu đã đọc thông báo theo ID ──────────
+  // (dùng chung endpoint của customer vì notification.id là unique)
+  adminMarkAsRead(notificationId) {
+    return http.put(`/api/auth/notifications/${notificationId}/read`);
+  },
+
+  // ── Dành cho Admin: đánh dấu tất cả RETURN_REQUEST đã đọc ──────
+  adminMarkAllReturnRequestRead() {
+    return http.put("/api/auth/admin/notifications/return-requests/read-all");
   },
 };
 

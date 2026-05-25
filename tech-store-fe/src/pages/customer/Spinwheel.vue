@@ -1,14 +1,16 @@
 <template>
   <div style="max-width: 1000px; margin: 0 auto; padding: 32px 24px 80px;">
 
-    <!-- Not VIP -->
-    <el-card v-if="!status.isVip" shadow="never" :body-style="{ padding: '72px 32px', textAlign: 'center' }">
-      <el-space direction="vertical" :size="16" align="center">
-        <el-text style="font-size: 56px; line-height: 1;">🔒</el-text>
-        <el-text tag="div" style="font-size: 22px; font-weight: 800; color: var(--el-text-color-primary);">Tính năng dành riêng cho VIP</el-text>
-        <el-text type="info">Nâng cấp tài khoản để quay vòng may mắn và nhận ưu đãi đặc biệt mỗi tuần.</el-text>
-        <el-button type="primary" plain @click="$router.push('/')">Khám phá gói VIP</el-button>
-      </el-space>
+    <!-- Not VIP: dùng el-result -->
+    <el-card v-if="!status.isVip" shadow="never" class="profile-card">
+      <el-result icon="warning" title="Tính năng dành riêng cho VIP">
+        <template #sub-title>
+          <el-text type="info">Nâng cấp tài khoản để quay vòng may mắn và nhận ưu đãi đặc biệt mỗi tuần.</el-text>
+        </template>
+        <template #extra>
+          <el-button type="primary" plain @click="$router.push('/')">Khám phá gói VIP</el-button>
+        </template>
+      </el-result>
     </el-card>
 
     <!-- VIP -->
@@ -18,7 +20,7 @@
       <el-row align="flex-start" justify="space-between" style="flex-wrap: wrap; gap: 16px; margin-bottom: 28px;">
         <el-space direction="vertical" :size="6">
           <el-tag type="primary" effect="plain" size="small" round>VIP Exclusive</el-tag>
-          <el-text tag="div" style="font-size: 24px; font-weight: 800; letter-spacing: -0.02em;">Vòng Quay May Mắn</el-text>
+          <el-text tag="div" class="spin-title">Vòng Quay May Mắn</el-text>
           <el-text size="small" type="info">Quay 1 lần mỗi tuần — nhận thêm % giảm giá cho đơn hàng tiếp theo</el-text>
         </el-space>
         <el-tag
@@ -38,7 +40,7 @@
       <div class="spin-layout">
 
         <!-- Wheel card -->
-        <el-card shadow="never" :body-style="{ padding: '32px 28px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '24px' }">
+        <el-card shadow="never" class="profile-card" :body-style="{ padding: '32px 28px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '24px' }">
           <div class="wheel-wrap">
             <div class="pointer">▼</div>
             <canvas
@@ -82,14 +84,18 @@
           <el-card
             v-if="status.currentBonus > 0"
             shadow="never"
+            class="profile-card"
             style="border-color: var(--el-color-warning-light-5); background: var(--el-color-warning-light-9);"
           >
-            <el-text size="small" type="warning" style="text-transform: uppercase; letter-spacing: 0.07em; font-weight: 700; display: flex; align-items: center; gap: 6px; margin-bottom: 16px;">
-              <el-icon><Star /></el-icon> Ưu đãi đang áp dụng
-            </el-text>
+            <template #header>
+              <el-space :size="6">
+                <el-icon color="var(--el-color-warning)"><Star /></el-icon>
+                <el-text type="warning" style="font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em;">Ưu đãi đang áp dụng</el-text>
+              </el-space>
+            </template>
             <el-row align="middle" :gutter="16">
               <el-col flex="none">
-                <el-text style="font-size: 52px; font-weight: 900; color: var(--el-color-warning); line-height: 1;">
+                <el-text type="warning" class="bonus-number">
                   {{ status.currentBonus }}<span style="font-size: 22px;">%</span>
                 </el-text>
               </el-col>
@@ -103,10 +109,13 @@
           </el-card>
 
           <!-- History -->
-          <el-card shadow="never">
-            <el-text size="small" type="info" style="text-transform: uppercase; letter-spacing: 0.07em; font-weight: 700; display: flex; align-items: center; gap: 6px; margin-bottom: 16px;">
-              <el-icon><Clock /></el-icon> Lịch sử quay
-            </el-text>
+          <el-card shadow="never" class="profile-card">
+            <template #header>
+              <el-space :size="6">
+                <el-icon><Clock /></el-icon>
+                <el-text style="font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em;">Lịch sử quay</el-text>
+              </el-space>
+            </template>
 
             <el-empty
               v-if="history.length === 0"
@@ -114,58 +123,61 @@
               description="Chưa có lịch sử quay thưởng"
             />
 
-            <el-space v-else direction="vertical" fill :size="8" style="width: 100%;">
-              <el-card
-                v-for="item in history"
-                :key="item.id"
-                shadow="never"
-                :body-style="{ padding: '12px 14px' }"
-                style="background: var(--el-fill-color-lighter);"
-              >
-                <el-row align="middle" :gutter="12">
-                  <el-col flex="none"><span style="font-size: 20px;">{{ getHistoryIcon(item.status) }}</span></el-col>
-                  <el-col flex="1">
-                    <el-text tag="div" style="font-size: 14px; font-weight: 700;">{{ item.discountBonus }}% giảm giá</el-text>
-                    <el-text size="small" type="info">{{ formatDate(item.spunAt) }}</el-text>
-                  </el-col>
-                  <el-col flex="none">
-                    <el-tag
-                      :type="getHistoryClass(item) === 'active' ? 'success' : getHistoryClass(item) === 'expired' ? 'danger' : 'info'"
-                      effect="plain"
-                      size="small"
-                      round
-                    >{{ item.status }}</el-tag>
-                  </el-col>
-                </el-row>
-              </el-card>
-            </el-space>
+            <el-table v-else :data="history" size="small" style="width: 100%;">
+              <el-table-column label="" width="40">
+                <template #default="{ row }">
+                  <span>{{ getHistoryIcon(row.status) }}</span>
+                </template>
+              </el-table-column>
+              <el-table-column label="Ưu đãi" min-width="90">
+                <template #default="{ row }">
+                  <el-text style="font-weight: 700;">{{ row.discountBonus }}% giảm giá</el-text>
+                </template>
+              </el-table-column>
+              <el-table-column label="Thời gian" min-width="130">
+                <template #default="{ row }">
+                  <el-text size="small" type="info">{{ formatDate(row.spunAt) }}</el-text>
+                </template>
+              </el-table-column>
+              <el-table-column label="Trạng thái" width="110" align="center">
+                <template #default="{ row }">
+                  <el-tag
+                    :type="getHistoryClass(row) === 'active' ? 'success' : getHistoryClass(row) === 'expired' ? 'danger' : 'info'"
+                    effect="plain"
+                    size="small"
+                    round
+                  >{{ row.status }}</el-tag>
+                </template>
+              </el-table-column>
+            </el-table>
           </el-card>
 
         </el-space>
       </div>
     </div>
 
-    <!-- Result Dialog -->
+    <!-- Result Dialog: dùng el-result -->
     <el-dialog
       v-model="showResult"
       width="380px"
       align-center
       :show-close="false"
+      class="spin-result-dialog"
     >
-      <el-space direction="vertical" fill align="center" :size="12" style="width: 100%; text-align: center; padding: 16px 0;">
-        <el-text style="font-size: 64px; line-height: 1;">🎉</el-text>
-        <el-text tag="div" style="font-size: 24px; font-weight: 800;">Chúc mừng!</el-text>
-        <el-text type="primary" style="font-size: 72px; font-weight: 900; line-height: 1;">
-          {{ lastResult?.discountBonus }}<span style="font-size: 28px;">%</span>
-        </el-text>
-        <el-text>{{ lastResult?.message }}</el-text>
-        <el-text size="small" type="info">Có hiệu lực đến {{ formatDate(lastResult?.expiresAt) }}</el-text>
-      </el-space>
-      <template #footer>
-        <el-row justify="center">
-          <el-button type="primary" round style="min-width: 140px;" @click="closeResult">Tuyệt vời!</el-button>
-        </el-row>
-      </template>
+      <el-result icon="success" title="Chúc mừng!">
+        <template #sub-title>
+          <el-space direction="vertical" :size="8" align="center">
+            <el-text type="primary" class="result-number">
+              {{ lastResult?.discountBonus }}<span style="font-size: 28px;">%</span>
+            </el-text>
+            <el-text>{{ lastResult?.message }}</el-text>
+            <el-text size="small" type="info">Có hiệu lực đến {{ formatDate(lastResult?.expiresAt) }}</el-text>
+          </el-space>
+        </template>
+        <template #extra>
+          <el-button type="primary" round style="min-width: 140px;" @click="closeResult">Tuyệt vời! 🎉</el-button>
+        </template>
+      </el-result>
     </el-dialog>
 
   </div>
@@ -173,6 +185,7 @@
 
 <script>
 import { Clock, Star } from '@element-plus/icons-vue';
+import { ElMessage } from 'element-plus';
 import { customersApi } from '../../api/customers.api';
 
 export default {
@@ -263,7 +276,7 @@ export default {
         this.showResult = true;
         await this.loadData();
       } catch (e) {
-        alert(e.response?.data?.error || 'Lỗi khi quay thưởng');
+        ElMessage.error(e.response?.data?.error || 'Lỗi khi quay thưởng');
         this.isSpinning = false;
       }
     },
@@ -276,12 +289,9 @@ export default {
         const idx = this.prizes.findIndex(p => p.discount == resultDiscount);
         const seg = (2 * Math.PI) / this.prizes.length;
 
-        // Kim ở đỉnh = -Math.PI/2, cần xoay để giữa ô idx khớp với kim
         const midAngle = idx * seg + seg / 2;
         const targetAngle = -midAngle - Math.PI / 2;
-        // Chuẩn hóa về góc dương
         const normalizedTarget = ((targetAngle % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
-        // Thêm 6 vòng quay
         const total = Math.PI * 2 * 6 + normalizedTarget - ((startRot % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI));
 
         const animate = () => {
@@ -293,7 +303,7 @@ export default {
           else { this.isSpinning = false; resolve(); }
         };
         animate();
-        });
+      });
     },
 
     closeResult() { this.showResult = false; },
@@ -328,6 +338,24 @@ export default {
   .spin-layout { grid-template-columns: 1fr; }
 }
 
+.spin-title {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.bonus-number {
+  font-size: 52px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.result-number {
+  font-size: 72px;
+  font-weight: 900;
+  line-height: 1;
+}
+
 .wheel-wrap {
   position: relative;
   display: flex;
@@ -341,7 +369,7 @@ export default {
   left: 50%;
   transform: translateX(-50%);
   font-size: 22px;
-  color: #dc2626;
+  color: var(--el-color-danger);
   filter: drop-shadow(0 2px 4px rgba(0,0,0,.2));
   z-index: 2;
   line-height: 1;
