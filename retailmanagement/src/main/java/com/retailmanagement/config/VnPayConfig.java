@@ -9,12 +9,26 @@ import javax.crypto.spec.SecretKeySpec;
 
 public class VnPayConfig {
     public static String vnp_PayUrl    = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
-    public static String vnp_ReturnUrl = "http://localhost:5173/payment-result";
+    public static String vnp_ReturnUrl;
+    public static String vnp_TmnCode;
+    public static String vnp_HashSecret;
 
-    // ⚠️ THAY 2 GIÁ TRỊ NÀY BẰNG THÔNG TIN TỪ VNPAY SANDBOX PORTAL CỦA BẠN
-    // https://sandbox.vnpayment.vn/merchantv2/ → Thông tin tài khoản
-    public static String vnp_TmnCode    = "2Z4PF208";
-    public static String vnp_HashSecret = "E8Q1EPFT3BXR4PQ80O4J619YMLRFW3TH";
+    static {
+        String returnUrl = System.getenv("VNP_RETURN_URL");
+        vnp_ReturnUrl = (returnUrl != null && !returnUrl.isEmpty())
+                ? returnUrl
+                : "http://localhost:5173/payment-result";
+
+        String tmnCode = System.getenv("VNP_TMN_CODE");
+        vnp_TmnCode = (tmnCode != null && !tmnCode.isEmpty())
+                ? tmnCode
+                : "";
+
+        String hashSecret = System.getenv("VNP_HASH_SECRET");
+        vnp_HashSecret = (hashSecret != null && !hashSecret.isEmpty())
+                ? hashSecret
+                : "";
+    }
 
     /**
      * Tạo Payment URL theo đúng spec VNPAY v2.1.0.
