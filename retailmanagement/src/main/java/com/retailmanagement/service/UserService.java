@@ -155,7 +155,26 @@ public class UserService {
 
         Role oldRole = user.getRole();
 
-        if (oldRole.getName().equals(newRole.getName())) {
+        if (oldRole != null
+                && "CUSTOMER".equalsIgnoreCase(oldRole.getName())
+                && !"CUSTOMER".equalsIgnoreCase(newRole.getName())) {
+            throw new IllegalArgumentException("Không thể đổi role của tài khoản CUSTOMER");
+        }
+
+        if (oldRole != null
+                && !"ADMIN".equalsIgnoreCase(oldRole.getName())
+                && "ADMIN".equalsIgnoreCase(newRole.getName())) {
+            throw new IllegalArgumentException("Không thể đổi tài khoản thường sang role ADMIN");
+        }
+
+        if (oldRole != null
+                && "ADMIN".equalsIgnoreCase(oldRole.getName())
+                && !"ADMIN".equalsIgnoreCase(newRole.getName())) {
+            throw new IllegalArgumentException("Không thể đổi role của tài khoản ADMIN");
+        }
+
+        String oldRoleName = oldRole.getName();
+        if (oldRoleName != null && oldRoleName.equalsIgnoreCase(newRole.getName())) {
             throw new RuntimeException("Role không thay đổi");
         }
 
@@ -180,6 +199,10 @@ public class UserService {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User không tồn tại"));
 
+        if (user.getRole() != null && "ADMIN".equalsIgnoreCase(user.getRole().getName())) {
+            throw new IllegalArgumentException("Không thể xóa tài khoản có role ADMIN");
+        }
+
         user.setIsActive(false);
         userRepository.save(user);
 
@@ -197,4 +220,4 @@ public class UserService {
                 .updatedAt(user.getUpdatedAt())
                 .build();
     }
-}
+}   
